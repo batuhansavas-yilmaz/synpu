@@ -56,7 +56,10 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None):
 
     def storage():
         bump("storage")
-        return StorageStats(label="C:", used_mb=100, total_mb=400, percent=25.0)
+        return [
+            StorageStats(label="C:", used_mb=100, total_mb=400, percent=25.0, is_system=True),
+            StorageStats(label="D:", used_mb=50, total_mb=200, percent=25.0),
+        ]
 
     col = MetricsCollector(
         cpu, gpu, ram, fps, hw,
@@ -69,7 +72,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None):
 def test_snapshot_schema_and_hostname():
     col, _, _ = _collector()
     d = col.snapshot()
-    assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps", "storage", "net", "fans"}
+    assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps", "disks", "net", "fans"}
     assert d["hostname"] == "pc"
     assert d["cpu"]["usage_pct"] == 10.0
     assert d["cpu"]["temp_c"] == 55.0
@@ -79,10 +82,12 @@ def test_snapshot_schema_and_hostname():
     assert d["gpu"]["freq_mhz"] == 2610.0
     assert d["ram"]["percent"] == 50.0
     assert d["fps"] == {"app": "game.exe", "value": 60.0}
-    assert d["storage"] == {
-        "label": "C:", "used_mb": 100, "total_mb": 400,
-        "percent": 25.0, "temp_c": 38.0,
-    }
+    assert d["disks"] == [
+        {"label": "C:", "used_mb": 100, "total_mb": 400, "percent": 25.0,
+         "temp_c": 38.0, "is_system": True},
+        {"label": "D:", "used_mb": 50, "total_mb": 200, "percent": 25.0,
+         "temp_c": None, "is_system": False},
+    ]
     assert d["net"] == {"down_bps": 1_000_000.0, "up_bps": 200_000.0}
     assert d["fans"] == [
         {"name": "CPU Fan", "rpm": 1200.0},

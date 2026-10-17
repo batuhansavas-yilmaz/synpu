@@ -21,7 +21,7 @@ from synpu.metrics.gpu import read_gpu
 from synpu.metrics.hardware_monitor import CpuTempReader
 from synpu.metrics.net import NetSpeedMeter
 from synpu.metrics.ram import read_ram
-from synpu.metrics.storage import read_storage
+from synpu.metrics.storage import read_disks
 from synpu.net.addresses import primary_ip
 from synpu.server.app import create_app
 from synpu.ui.qr_window import run_ui
@@ -90,7 +90,7 @@ def main() -> None:
         ram_source=read_ram,
         fps_source=lambda now: tracker.current(now, foreground_pid()),
         hw_reader=temp_reader.read,
-        storage_source=read_storage,
+        storage_source=read_disks,
         net_meter=NetSpeedMeter(),
         ttl=config.PUSH_INTERVAL_S,
     )
@@ -102,6 +102,16 @@ def main() -> None:
         daemon=True,
     )
     server.start()
+
+    def sampling_loop() -> None:
+        while True:
+            time.sleep(1.0)
+            try:
+                collector.snapshot()
+            except Exception:
+                pass
+
+    threading.Thread(target=sampling_loop, daemon=True).start()
 
     try:
         run_ui(_url_provider, STATE_DIR)

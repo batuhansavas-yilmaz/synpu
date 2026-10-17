@@ -34,6 +34,7 @@ class StorageStats:
     total_mb: int | None = None
     percent: float | None = None
     temp_c: float | None = None
+    is_system: bool = False
 
 
 @dataclass(frozen=True)
@@ -62,7 +63,7 @@ class Snapshot:
     gpu: GpuStats | None
     ram: RamStats | None
     fps: FpsStats
-    storage: StorageStats | None = None
+    disks: list[StorageStats] = field(default_factory=list)
     net: NetStats | None = None
     fans: list[FanStat] = field(default_factory=list)
 

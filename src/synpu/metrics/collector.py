@@ -61,14 +61,18 @@ class MetricsCollector:
         except Exception:
             fps = FpsStats(app=None, value=None)
 
-        storage = None
+        storage = []
         if self._storage_source is not None:
             try:
-                storage = self._storage_source()
+                storage = list(self._storage_source() or [])
             except Exception:
-                storage = None
-            if storage is not None and hw.disk_temps:
-                storage = replace(storage, temp_c=hw.disk_temps[0][1])
+                storage = []
+            if storage and hw.disk_temps:
+                temps = [temp for _, temp in hw.disk_temps]
+                if len(temps) == len(storage):
+                    storage = [replace(disk, temp_c=temp) for disk, temp in zip(storage, temps)]
+                else:
+                    storage[0] = replace(storage[0], temp_c=temps[0])
 
         net = None
         if self._net_meter is not None:
@@ -86,7 +90,7 @@ class MetricsCollector:
             gpu=gpu,
             ram=ram,
             fps=fps,
-            storage=storage,
+            disks=storage,
             net=net,
             fans=fans,
         )
@@ -96,7 +100,8 @@ class MetricsCollector:
         return self._cached
 
     @staticmethod
-    def _history_sample(ts, cpu, gpu, ram, storage, net) -> dict:
+    def _history_sample(ts, cpu, gpu, ram, disks, net) -> dict:
+        system_disk = next((d for d in disks if d.is_system), disks[0] if disks else None)
         return {
             "ts": ts,
             "cpu_usage": cpu.usage_pct,
@@ -107,8 +112,8 @@ class MetricsCollector:
             "gpu_freq": gpu.freq_mhz if gpu is not None else None,
             "gpu_power": gpu.power_w if gpu is not None else None,
             "ram_percent": ram.percent if ram is not None else None,
-            "disk_percent": storage.percent if storage is not None else None,
-            "disk_temp": storage.temp_c if storage is not None else None,
+            "disk_percent": system_disk.percent if system_disk is not None else None,
+            "disk_temp": system_disk.temp_c if system_disk is not None else None,
             "net_down": net.down_bps if net is not None else None,
             "net_up": net.up_bps if net is not None else None,
         }

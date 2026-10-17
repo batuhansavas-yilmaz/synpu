@@ -27,6 +27,7 @@ class FakeCollector:
 @pytest.fixture
 def client(tmp_path):
     (tmp_path / "index.html").write_text("<html><body>Synpu</body></html>", encoding="utf-8")
+    (tmp_path / "manifest.json").write_text('{"name": "Synpu"}', encoding="utf-8")
     app = create_app(FakeCollector(), push_interval=0.05, static_dir=tmp_path)
     return TestClient(app)
 
@@ -42,6 +43,12 @@ def test_snapshot_endpoint_schema(client):
     assert r.status_code == 200
     d = r.json()
     assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps"}
+
+
+def test_static_manifest_served(client):
+    r = client.get("/static/manifest.json")
+    assert r.status_code == 200
+    assert r.json()["name"] == "Synpu"
 
 
 def test_history_endpoint(client):

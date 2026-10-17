@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from synpu import config
 
@@ -25,6 +26,7 @@ def is_allowed_origin(origin: str | None) -> bool:
 def create_app(collector, push_interval: float = config.PUSH_INTERVAL_S,
                static_dir: Path = DEFAULT_STATIC_DIR) -> FastAPI:
     app = FastAPI()
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
     app.add_middleware(
         CORSMiddleware,
         allow_origin_regex=ORIGIN_REGEX,

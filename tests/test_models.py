@@ -13,6 +13,6 @@ def test_snapshot_to_dict_nullable_gpu_and_fps():
                  "gpu": None,
                  "ram": {"used_mb": 100, "total_mb": 200, "percent": 50.0},
                  "fps": {"app": None, "value": None},
-                 "storage": None,
+                 "disks": [],
                  "net": None,
                  "fans": []}

@@ -6,12 +6,15 @@ PC'nin canlı sistem istatistiklerini (CPU/GPU kullanımı ve sıcaklığı, RAM
 
 | Kart | Değerler |
 |------|----------|
-| İşlemci | Kullanım %, sıcaklık (yönetici izniyle) |
-| Ekran Kartı | Kullanım %, sıcaklık, VRAM, güç (NVIDIA) |
+| İşlemci | Kullanım %, sıcaklık, frekans, model |
+| Ekran Kartı | Kullanım %, sıcaklık, frekans, VRAM, güç |
 | Bellek | Kullanılan / toplam, % |
-| Oyun FPS | Aktif oyunun anlık FPS değeri (yönetici izniyle) |
+| Diskler | Her disk için doluluk (+ sıcaklık); sistem diski Windows simgeli |
+| Ağ | Anlık indirme / yükleme hızı |
+| Fanlar | Fan devirleri (anakart destekliyorsa, best-effort) |
+| Oyun FPS | Ön plandaki uygulamanın anlık FPS değeri |
 
-Değerler yarım saniyede bir güncellenir. Okunamayan bir değer `—` olarak görünür (ör. NVIDIA kart yoksa GPU, oyun açık değilse FPS).
+Ayrıca **Grafikler** sekmesi son 1 saatin geçmişini gösterir (1dk/5dk/15dk/1sa; CPU/GPU/RAM/Disk). Değerler yarım saniyede bir güncellenir. Okunamayan bir değer `—` olarak görünür.
 
 ## Gereksinimler
 
@@ -32,7 +35,7 @@ Kurulum sırasında internetten indirilenler: [uv](https://astral.sh/uv) (Python
 
 1. Kurulum sonrası PC'de **"Synpu — Telefonla Bağlan"** penceresi açılır; QR kodu telefonun kamerasıyla okut.
 2. Tarayıcı otomatik açılır ve panel görünür.
-3. Sayfayı ana ekrana ekleyebilirsin (Tarayıcı menüsü → "Ana ekrana ekle") — uygulama gibi açılır.
+3. Sayfayı ana ekrana ekleyebilirsin (Tarayıcı menüsü → "Ana ekrana ekle") — uygulama gibi açılır (manifest + ikonlar hazır).
 
 Pencereyi kapatırsan Synpu çalışmaya devam eder; sağ alt tepsi simgesinden "QR'ı Göster" ile geri açabilirsin.
 
