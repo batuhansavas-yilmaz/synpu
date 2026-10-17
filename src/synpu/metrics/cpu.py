@@ -1,9 +1,25 @@
+import re
+
 import psutil
 
 from synpu.metrics.models import CpuStats
 
 _CPU_NAME: str | None = None
 _NAME_LOADED = False
+
+
+def short_cpu_name(name: str) -> str:
+    text = name or ""
+    text = text.replace("(R)", "").replace("(TM)", "")
+    text = re.sub(r"@\s*[\d.]+\s*GHz", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\b\d+(?:st|nd|rd|th)\s+Gen\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\b\d+-Core\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bCore\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bCPU\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bProcessor\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\b(i[3579])-(\w+)", r"\1 \2", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text or name
 
 
 def cpu_name() -> str | None:
@@ -19,7 +35,7 @@ def cpu_name() -> str | None:
             r"HARDWARE\DESCRIPTION\System\CentralProcessor\0",
         )
         try:
-            _CPU_NAME = str(winreg.QueryValueEx(key, "ProcessorNameString")[0]).strip()
+            _CPU_NAME = short_cpu_name(str(winreg.QueryValueEx(key, "ProcessorNameString")[0]).strip())
         finally:
             winreg.CloseKey(key)
     except Exception:
