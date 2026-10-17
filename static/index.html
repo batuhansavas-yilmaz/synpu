@@ -212,6 +212,26 @@ nav.bottom .inner {
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 .pc-item.active { background: rgba(110, 168, 255, 0.14); border-color: rgba(110, 168, 255, 0.35); }
+@media (max-width: 899px) {
+  #screen-home.active {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  #screen-home.active .card,
+  #screen-home.active .gauges,
+  #screen-home.active .mini-grid { margin: 0 !important; }
+  #home-fps-card { order: 1; }
+  #screen-home > .home-col > .gauges { order: 2; }
+  #screen-home > .home-col > .mini-grid { order: 3; }
+  #gpu-list-card { order: 4; }
+  #home-ram-card { order: 5; }
+  #home-disk-card { order: 6; }
+  #home-fans-card { order: 7; }
+  #home-net-card { order: 8; }
+  #home-top-card { order: 9; }
+  #home-sys-card { order: 10; }
+}
 @media (min-width: 900px) {
   .install-banner { bottom: 100px; }
   .app { max-width: 1060px; padding: 24px 24px 120px; display: flex; flex-direction: column; min-height: 100vh; }
@@ -227,7 +247,6 @@ nav.bottom .inner {
   .home-col > .card:last-child { flex: 1; }
   .home-col .card, .home-col .mini-grid { margin: 0 !important; }
   #screen-home > .card { margin: 0 !important; }
-  #screen-home > .card:nth-child(3) { grid-column: 1 / -1; }
   #screen-charts .seg, #screen-charts .pills { max-width: 560px; }
   #charts-wrap, #gpu-charts {
     display: grid;
@@ -323,7 +342,7 @@ nav.bottom .inner {
 
   <section class="screen active" id="screen-home">
     <div class="home-col col-a">
-    <div class="card" style="margin-bottom:10px">
+    <div class="card" id="home-fps-card" style="margin-bottom:10px">
       <div class="row-between">
         <div>
           <div class="card-title" style="margin:0">FPS Değeri</div>
@@ -375,7 +394,7 @@ nav.bottom .inner {
       <div class="mini" id="battery-card" hidden><div class="k">Pil</div><div class="v" id="val-battery">—</div></div>
     </div>
 
-    <div class="card" style="margin-top:10px">
+    <div class="card" id="home-top-card" style="margin-top:10px">
       <div class="card-title">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
         En Yoğun
@@ -391,13 +410,16 @@ nav.bottom .inner {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="home-sys-card">
       <div class="card-title">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         Sistem
       </div>
       <div class="row-between">
         <span class="muted">Bilgisayar</span><b id="home-sys-host">—</b>
+      </div>
+      <div class="row-between" style="margin-top:6px">
+        <span class="muted">Anakart</span><b id="home-mobo-val" style="text-align:right">—</b>
       </div>
       <div class="row-between" style="margin-top:6px">
         <span class="muted">Monitör</span><b id="home-sys-monitor">—</b>
@@ -417,12 +439,12 @@ nav.bottom .inner {
     <div class="card" id="gpu-list-card" hidden style="margin-top:10px">
       <div class="card-title">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="8.5" cy="12" r="1.6"/><path d="M14 10h4M14 14h4"/></svg>
-        GPU'lar
+        <span id="gpu-list-title">GPU'lar</span>
       </div>
       <div class="list" id="gpu-list"></div>
     </div>
 
-    <div class="card" style="margin-top:10px">
+    <div class="card" id="home-ram-card" style="margin-top:10px">
       <div class="row-between" style="margin-bottom:8px">
         <div class="card-title" style="margin:0">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="10" rx="2"/><path d="M7 20v-4M12 20v-4M17 20v-4"/></svg>
@@ -441,16 +463,16 @@ nav.bottom .inner {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="home-disk-card">
       <div class="card-title">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v16M4 8h4M4 16h4"/></svg>
-        Depolama
+        <span>Depolama</span>
         <span class="warn-dot" id="warn-disk" hidden></span>
       </div>
       <div class="list" id="home-disks"><div class="muted">—</div></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="home-net-card">
       <div class="row-between" style="margin-bottom:10px">
         <div class="card-title" style="margin:0">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.6-3.8-9S9.5 5.5 12 3z"/></svg>
@@ -469,24 +491,13 @@ nav.bottom .inner {
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="home-fans-card">
       <div class="card-title">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45-5.412Z"/><circle cx="12" cy="12" r="2"/></svg>
         Fanlar
       </div>
       <div class="list" id="home-fans"><div class="muted">—</div></div>
     </div>
-    </div>
-
-    <div class="card" style="margin-top:10px">
-      <div class="card-title">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><rect x="7" y="8" width="6" height="6" rx="1"/><path d="M16 8h3M16 12h3M16 16h3M7 17h6"/></svg>
-        Anakart
-      </div>
-      <div class="row-between">
-        <span class="muted" id="home-mobo-vendor">—</span>
-        <b id="home-mobo-model" style="text-align:right">—</b>
-      </div>
     </div>
   </section>
 
@@ -700,7 +711,7 @@ function clearValues() {
    "val-gpu-temp", "val-gpu-usage", "val-gpu-power", "val-gpu-freq",
    "gd-hotspot", "gd-fan", "val-cpu-freq",
    "val-ram-pct", "val-ram-used", "val-fps-app", "val-fps-value",
-   "home-sys-monitor", "home-sys-screen",
+   "home-sys-monitor", "home-sys-screen", "home-mobo-val",
    "top-cpu", "top-ram", "top-gpu", "home-sys-host", "home-sys-uptime",
    "val-net-down", "val-net-up", "val-ping", "net-meta", "home-cpu-name", "home-gpu-name",
    "home-ram-total", "home-ram-speed",
@@ -709,8 +720,6 @@ function clearValues() {
   setBar("home-ram-bar", 0);
   $("home-disks").innerHTML = '<div class="muted">' + dash + '</div>';
   $("home-fans").innerHTML = '<div class="muted">' + dash + '</div>';
-  $("home-mobo-vendor").textContent = dash;
-  $("home-mobo-model").textContent = dash;
   $("battery-card").hidden = true;
   $("val-battery").textContent = dash;
   $("about-uptime").textContent = "";
@@ -781,8 +790,9 @@ function render(d) {
 
   const gpuList = Array.isArray(d.gpus) ? d.gpus : [];
   const gpuCard = $("gpu-list-card");
-  if (gpuList.length > 1) {
+  if (gpuList.length > 0) {
     gpuCard.hidden = false;
+    $("gpu-list-title").textContent = gpuList.length > 1 ? "GPU'lar" : "GPU";
     $("gpu-list").innerHTML = gpuList.map((g) => {
       const active = gpu && g.name === gpu.name;
       const usage = g.usage_pct != null ? Number(g.usage_pct).toFixed(1) + "%" : dash;
@@ -871,9 +881,9 @@ function render(d) {
     ? activeFans.map((f) => '<div class="list-item"><span class="muted">' + escapeHtml(f.name) + '</span><b>' + Math.round(f.rpm) + ' RPM</b></div>').join("")
     : '<div class="muted">' + dash + '</div>';
 
-  const motherboard = d.motherboard;
-  $("home-mobo-vendor").textContent = motherboard && motherboard.vendor ? motherboard.vendor : dash;
-  $("home-mobo-model").textContent = motherboard && motherboard.model ? motherboard.model : dash;
+  const motherboard = d.motherboard || {};
+  const moboParts = [motherboard.vendor, motherboard.model].filter(Boolean);
+  $("home-mobo-val").textContent = moboParts.length ? moboParts.join(" ") : dash;
 
   applyWarn("val-cpu-temp", "warn-cpu-temp", cpu.temp_c, 70, 80);
   applyWarn("home-gpu-temp", "warn-gpu-temp", gpu && gpu.temp_c, 70, 80);
