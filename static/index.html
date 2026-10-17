@@ -108,12 +108,12 @@ function setStatus(state) {
 }
 
 function render(d) {
-  $("val-cpu-usage").textContent = fmt(d.cpu && d.cpu.usage_pct, "%", 0);
-  $("val-cpu-temp").textContent = fmt(d.cpu && d.cpu.temp_c, "\u00b0C", 0);
+  $("val-cpu-usage").textContent = fmt(d.cpu && d.cpu.usage_pct, "%", 1);
+  $("val-cpu-temp").textContent = fmt(d.cpu && d.cpu.temp_c, "\u00b0C", 1);
   const g = d.gpu;
   $("gpu-name").textContent = g && g.name ? g.name : dash;
-  $("val-gpu-usage").textContent = fmt(g && g.usage_pct, "%", 0);
-  $("val-gpu-temp").textContent = fmt(g && g.temp_c, "\u00b0C", 0);
+  $("val-gpu-usage").textContent = fmt(g && g.usage_pct, "%", 1);
+  $("val-gpu-temp").textContent = fmt(g && g.temp_c, "\u00b0C", 1);
   $("val-gpu-vram").textContent = g && g.vram_used_mb != null && g.vram_total_mb != null
     ? (g.vram_used_mb / 1024).toFixed(1) + " / " + Math.round(g.vram_total_mb / 1024) + " GB"
     : dash;
@@ -161,7 +161,7 @@ function startPolling(pc) {
       }
     };
     tick();
-    pollTimer = setInterval(tick, 2000);
+    pollTimer = setInterval(tick, 1000);
   }
   if (!retryTimer) retryTimer = setInterval(() => tryWs(pc), 5000);
 }

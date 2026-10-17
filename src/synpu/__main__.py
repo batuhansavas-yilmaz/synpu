@@ -88,6 +88,7 @@ def main() -> None:
         ram_source=read_ram,
         fps_source=lambda now: tracker.current(now, foreground_pid()),
         temp_reader=temp_reader.read,
+        ttl=config.PUSH_INTERVAL_S,
     )
 
     app = create_app(collector)

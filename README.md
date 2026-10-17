@@ -11,7 +11,7 @@ PC'nin canlı sistem istatistiklerini (CPU/GPU kullanımı ve sıcaklığı, RAM
 | Bellek | Kullanılan / toplam, % |
 | Oyun FPS | Aktif oyunun anlık FPS değeri (yönetici izniyle) |
 
-Değer saniyede bir güncellenir. Okunamayan bir değer `—` olarak görünür (ör. NVIDIA kart yoksa GPU, oyun açık değilse FPS).
+Değerler yarım saniyede bir güncellenir. Okunamayan bir değer `—` olarak görünür (ör. NVIDIA kart yoksa GPU, oyun açık değilse FPS).
 
 ## Gereksinimler
 
