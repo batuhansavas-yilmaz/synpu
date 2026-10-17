@@ -37,9 +37,9 @@ body {
 }
 .app {
   max-width: 520px; margin: 0 auto;
-  padding: 10px 14px 56px;
+  padding: 10px 14px 84px;
   padding-top: calc(6px + env(safe-area-inset-top) + var(--sat-extra, 0px));
-  padding-bottom: calc(56px + env(safe-area-inset-bottom) + var(--sab-extra, 0px));
+  padding-bottom: calc(84px + env(safe-area-inset-bottom) + var(--sab-extra, 0px));
 }
 .home-col { display: contents; }
 header.top { display: flex; align-items: center; gap: 10px; padding: 0 0 10px; }
@@ -220,10 +220,11 @@ nav.bottom .inner {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 18px;
-    align-items: start;
+    align-items: stretch;
     width: 100%;
   }
   .home-col { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .home-col > .card:last-child { flex: 1; }
   .home-col .card, .home-col .mini-grid { margin: 0 !important; }
   #screen-home > .card { margin: 0 !important; }
   #screen-home > .card:nth-child(3) { grid-column: 1 / -1; }
