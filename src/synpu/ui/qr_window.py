@@ -26,6 +26,36 @@ def build_qr_image(url: str) -> Image.Image:
     return qr.make_image(fill_color="black", back_color="white").get_image()
 
 
+def _system_uses_light_theme() -> bool:
+    try:
+        import winreg
+
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+        )
+        value, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
+        return bool(value)
+    except Exception:
+        return True
+
+
+def _apply_titlebar_theme(root: tk.Tk) -> None:
+    try:
+        import ctypes
+
+        hwnd = ctypes.windll.user32.GetParent(root.winfo_id()) or root.winfo_id()
+        value = ctypes.c_int(0 if _system_uses_light_theme() else 1)
+        for attribute in (20, 19):
+            result = ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                hwnd, attribute, ctypes.byref(value), ctypes.sizeof(value)
+            )
+            if result == 0:
+                break
+    except Exception:
+        pass
+
+
 def should_autoshow(state_dir: Path) -> bool:
     state_file = state_dir / "state.json"
     try:
@@ -79,6 +109,8 @@ def run_ui(url_provider: Callable[[], "str | None"], state_dir: Path,
         root.iconbitmap(str(ico_path))
     except Exception:
         pass
+    root.update_idletasks()
+    _apply_titlebar_theme(root)
 
     header = tk.Frame(root, bg=BG)
     header.pack(fill="x", padx=20, pady=(18, 10))
@@ -117,6 +149,14 @@ def run_ui(url_provider: Callable[[], "str | None"], state_dir: Path,
             import webbrowser
 
             webbrowser.open(url)
+        except Exception:
+            pass
+
+    def open_github():
+        try:
+            import webbrowser
+
+            webbrowser.open("https://github.com/batuhansavas-yilmaz/synpu/releases")
         except Exception:
             pass
 
@@ -167,7 +207,13 @@ def run_ui(url_provider: Callable[[], "str | None"], state_dir: Path,
         root.after(30000, refresh)
 
     def show_window():
-        root.after(0, lambda: (root.deiconify(), root.lift(), root.focus_force()))
+        def reveal():
+            root.deiconify()
+            _apply_titlebar_theme(root)
+            root.lift()
+            root.focus_force()
+
+        root.after(0, reveal)
 
     def quit_app():
         try:
@@ -190,13 +236,14 @@ def run_ui(url_provider: Callable[[], "str | None"], state_dir: Path,
         _app_icon(64),
         "Synpu",
         menu=pystray.Menu(
-            pystray.MenuItem("QR'ı Göster", lambda: show_window()),
-            pystray.MenuItem("Adresi Kopyala", lambda: root.after(0, copy_url)),
+            pystray.MenuItem("QR'ı Göster", lambda: show_window(),
+                             default=True, visible=False),
             pystray.MenuItem(
                 "Başlangıçta çalıştır",
                 toggle_startup,
                 checked=lambda item: startup.is_enabled(),
             ),
+            pystray.MenuItem("Hakkında", lambda: open_github()),
             pystray.MenuItem("Çıkış", lambda: quit_app()),
         ),
     )
