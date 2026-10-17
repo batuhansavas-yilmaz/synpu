@@ -28,14 +28,10 @@ try {
     $desktopShortcut.Description = "Synpu - Telefonla Baglan"
     $desktopShortcut.Save()
 
-    $startup = [Environment]::GetFolderPath("Startup")
-    $startupShortcut = $shell.CreateShortcut((Join-Path $startup "Synpu.lnk"))
-    $startupShortcut.TargetPath = Join-Path $env:SystemRoot "System32\wscript.exe"
-    $startupShortcut.Arguments = "`"$vbs`""
-    $startupShortcut.WorkingDirectory = $InstallRoot
-    $startupShortcut.IconLocation = $icon
-    $startupShortcut.Description = "Synpu"
-    $startupShortcut.Save()
+    $legacyStartup = Join-Path ([Environment]::GetFolderPath("Startup")) "Synpu.lnk"
+    if (Test-Path $legacyStartup) { Remove-Item $legacyStartup -Force }
+    $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+    New-ItemProperty -Path $runKey -Name "Synpu" -Value "`"$env:SystemRoot\System32\wscript.exe`" `"$vbs`"" -PropertyType String -Force | Out-Null
 
     Start-ScheduledTask -TaskName "Synpu"
     Start-Sleep -Seconds 2

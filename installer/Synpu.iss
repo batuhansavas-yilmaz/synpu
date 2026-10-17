@@ -1,4 +1,4 @@
-﻿#define MyAppName "Synpu"
+#define MyAppName "Synpu"
 #define MyAppVersion "0.2.3"
 #define MyAppPublisher "Batuhan Savas Yilmaz"
 #define MyAppURL "https://github.com/batuhansavas-yilmaz/synpu"
@@ -47,7 +47,7 @@ Name: "{userstartup}\Synpu"; Filename: "{sys}\wscript.exe"; Parameters: """{app}
 Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\scripts\setup.ps1"""; StatusMsg: "Synpu bilesenleri kuruluyor (birkac dakika surebilir)..."; Flags: runhidden waituntilterminated
 
 [UninstallRun]
-Filename: "powershell.exe"; Parameters: "-NoProfile -Command ""Unregister-ScheduledTask -TaskName Synpu -Confirm:$false -ErrorAction SilentlyContinue; Remove-NetFirewallRule -DisplayName 'Synpu (TCP 8787)' -ErrorAction SilentlyContinue"""; Flags: runhidden; RunOnceId: "RemoveSynpuTask"
+Filename: "powershell.exe"; Parameters: "-NoProfile -Command ""Unregister-ScheduledTask -TaskName Synpu -Confirm:$false -ErrorAction SilentlyContinue; Remove-NetFirewallRule -DisplayName 'Synpu (TCP 8787)' -ErrorAction SilentlyContinue; Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'Synpu' -ErrorAction SilentlyContinue; Remove-Item (Join-Path ([Environment]::GetFolderPath('Startup')) 'Synpu.lnk') -ErrorAction SilentlyContinue"""; Flags: runhidden; RunOnceId: "RemoveSynpuTask"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"

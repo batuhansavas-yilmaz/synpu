@@ -1,6 +1,9 @@
 import os
-import subprocess
+import winreg
 from pathlib import Path
+
+RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+VALUE_NAME = "Synpu"
 
 
 def _startup_dir() -> Path:
@@ -12,40 +15,36 @@ def shortcut_path() -> Path:
     return _startup_dir() / "Synpu.lnk"
 
 
+def _launch_command() -> str:
+    root = Path(__file__).resolve().parents[2]
+    vbs = root / "scripts" / "launch.vbs"
+    wscript = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "wscript.exe"
+    return f'"{wscript}" "{vbs}"'
+
+
 def is_enabled() -> bool:
     try:
-        return shortcut_path().exists()
-    except Exception:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as key:
+            value, _ = winreg.QueryValueEx(key, VALUE_NAME)
+        return bool(value)
+    except OSError:
         return False
 
 
 def set_enabled(enabled: bool) -> bool:
-    path = shortcut_path()
     try:
-        if not enabled:
-            if path.exists():
-                path.unlink()
-            return True
-        root = Path(__file__).resolve().parents[2]
-        vbs = root / "scripts" / "launch.vbs"
-        icon = root / "static" / "icon.ico"
-        wscript = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "wscript.exe"
-        script = (
-            "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('" + str(path) + "'); "
-            "$s.TargetPath = '" + str(wscript) + "'; "
-            "$s.Arguments = '\"" + str(vbs) + "\"'; "
-            "$s.WorkingDirectory = '" + str(root) + "'; "
-            "$s.IconLocation = '" + str(icon) + "'; "
-            "$s.Description = 'Synpu'; "
-            "$s.Save()"
-        )
-        subprocess.run(
-            ["powershell", "-NoProfile", "-Command", script],
-            capture_output=True,
-            text=True,
-            timeout=20,
-            creationflags=subprocess.CREATE_NO_WINDOW,
-        )
-        return path.exists()
+        if enabled:
+            with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
+                winreg.SetValueEx(key, VALUE_NAME, 0, winreg.REG_SZ, _launch_command())
+        else:
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as key:
+                    winreg.DeleteValue(key, VALUE_NAME)
+            except OSError:
+                pass
+        legacy = shortcut_path()
+        if legacy.exists():
+            legacy.unlink()
+        return is_enabled() == enabled
     except Exception:
         return False
