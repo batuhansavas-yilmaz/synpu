@@ -224,11 +224,11 @@ class MetricsCollector:
         )
         self._cached = snapshot.to_dict()
         self._cached_at = now
-        self.history.record(now, self._history_sample(snapshot.timestamp, cpu, gpu, ram, storage, net))
+        self.history.record(now, self._history_sample(snapshot.timestamp, cpu, gpu, gpu_candidates, ram, storage, net))
         return self._cached
 
     @staticmethod
-    def _history_sample(ts, cpu, gpu, ram, disks, net) -> dict:
+    def _history_sample(ts, cpu, gpu, gpu_candidates, ram, disks, net) -> dict:
         system_disk = next((d for d in disks if d.is_system), disks[0] if disks else None)
         sample = {
             "ts": ts,
@@ -256,4 +256,12 @@ class MetricsCollector:
             sample[f"disk_{key}_temp"] = disk.temp_c
             sample[f"disk_{key}_read"] = disk.read_bps
             sample[f"disk_{key}_write"] = disk.write_bps
+        for extra_gpu in gpu_candidates:
+            key = re.sub(r"[^A-Za-z0-9]", "", str(extra_gpu.name or ""))
+            if not key:
+                continue
+            sample[f"gpu_{key}_usage"] = extra_gpu.usage_pct
+            sample[f"gpu_{key}_temp"] = extra_gpu.temp_c
+            sample[f"gpu_{key}_power"] = extra_gpu.power_w
+            sample[f"gpu_{key}_fan"] = extra_gpu.fan_pct
         return sample

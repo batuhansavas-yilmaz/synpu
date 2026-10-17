@@ -92,6 +92,10 @@ header.top { display: flex; align-items: center; gap: 10px; padding: 0 0 10px; }
   padding: 6px 10px; border-radius: 999px; cursor: pointer; }
 .pill.active { background: var(--card2); color: var(--text); border-color: #33456f; }
 .chart-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; }
+.chart-group + .chart-group { margin-top: 16px; }
+.chart-group-title { font-size: 12px; font-weight: 700; letter-spacing: .4px; color: var(--text); margin-bottom: 8px; padding-left: 2px; }
+.chart-group-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.chart-group-grid .chart-card { margin-bottom: 0; }
 .chart-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
 .chart-head .t { font-size: 12px; color: var(--muted); font-weight: 600; }
 .chart-head .v { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -228,6 +232,8 @@ nav.bottom .inner {
     gap: 22px;
   }
   #charts-wrap .chart-card, #gpu-charts .chart-card { margin-bottom: 0; }
+  .chart-group + .chart-group { margin-top: 22px; }
+  .chart-group-grid { grid-template-columns: 1fr 1fr; gap: 18px; }
   #screen-gpu.active { max-width: 780px; margin: 0 auto; }
   #screen-settings.active {
     display: grid;
@@ -541,6 +547,7 @@ let rangeMinutes = 10;
 let chartTimer = null;
 let last = null;
 let lastDisks = [];
+let lastGpus = [];
 
 function loadPcs() {
   let list;
@@ -624,6 +631,7 @@ function clearValues() {
 function render(d) {
   last = d;
   lastDisks = Array.isArray(d.disks) ? d.disks : [];
+  lastGpus = Array.isArray(d.gpus) ? d.gpus : [];
   const cpu = d.cpu || {};
   const gpu = d.gpu;
   const ram = d.ram;
@@ -877,7 +885,24 @@ const CHART_DEFS = {
 function defsFor(screenName) {
   if (screenName === "gpu") return CHART_DEFS.gpu.slice(0, 2);
   if (chartTab === "disk") return diskChartDefs();
+  if (chartTab === "gpu") return gpuChartDefs();
   return CHART_DEFS[chartTab] || [];
+}
+
+function gpuChartDefs() {
+  const gpus = lastGpus.filter((g) => g && g.name);
+  const active = gpus.filter((g) => g.usage_pct != null && Number(g.usage_pct) > 1.0);
+  if (active.length < 2) return CHART_DEFS.gpu;
+  const defs = [];
+  gpus.forEach((gpu) => {
+    const key = String(gpu.name).replace(/[^A-Za-z0-9]/g, "");
+    if (!key) return;
+    defs.push({ key: "gpu_" + key + "_usage", title: "Kullanım", group: gpu.name, color: "#22c55e", suffix: "%", digits: 1 });
+    defs.push({ key: "gpu_" + key + "_temp", title: "Sıcaklık", group: gpu.name, color: "#f59e0b", suffix: "\u00b0C", digits: 1 });
+    defs.push({ key: "gpu_" + key + "_power", title: "Güç", group: gpu.name, color: "#a855f7", suffix: "W", digits: 0 });
+    defs.push({ key: "gpu_" + key + "_fan", title: "Fan", group: gpu.name, color: "#22d3ee", suffix: "%", digits: 0 });
+  });
+  return defs.length ? defs : CHART_DEFS.gpu;
 }
 
 function diskChartDefs() {
@@ -889,28 +914,11 @@ function diskChartDefs() {
   disks.forEach((disk, i) => {
     const key = String(disk.label || "").replace(/[^A-Za-z0-9]/g, "");
     if (!key) return;
-    defs.push({
-      key: "disk_" + key + "_percent",
-      title: "Disk " + disk.label + " Kullanımı",
-      color: usageColors[i % usageColors.length],
-      suffix: "%", digits: 1,
-    });
-    defs.push({
-      key: "disk_" + key + "_temp",
-      title: "Disk " + disk.label + " Sıcaklığı",
-      color: tempColors[i % tempColors.length],
-      suffix: "\u00b0C", digits: 1,
-    });
-    defs.push({
-      key: "disk_" + key + "_read",
-      title: "Disk " + disk.label + " Okuma",
-      color: "#14b8a6", suffix: "MB/s", digits: 2, scale: 1048576,
-    });
-    defs.push({
-      key: "disk_" + key + "_write",
-      title: "Disk " + disk.label + " Yazma",
-      color: "#ec4899", suffix: "MB/s", digits: 2, scale: 1048576,
-    });
+    const group = "Disk " + disk.label;
+    defs.push({ key: "disk_" + key + "_percent", title: "Kullanım", group: group, color: usageColors[i % usageColors.length], suffix: "%", digits: 1 });
+    defs.push({ key: "disk_" + key + "_temp", title: "Sıcaklık", group: group, color: tempColors[i % tempColors.length], suffix: "\u00b0C", digits: 1 });
+    defs.push({ key: "disk_" + key + "_read", title: "Okuma", group: group, color: "#14b8a6", suffix: "MB/s", digits: 2, scale: 1048576 });
+    defs.push({ key: "disk_" + key + "_write", title: "Yazma", group: group, color: "#ec4899", suffix: "MB/s", digits: 2, scale: 1048576 });
   });
   return defs.length ? defs : CHART_DEFS.disk;
 }
@@ -919,12 +927,23 @@ function buildChartCards() {
   const isGpu = screen === "gpu";
   const wrap = $(isGpu ? "gpu-charts" : "charts-wrap");
   const defs = defsFor(screen);
-  wrap.innerHTML = defs.map((def, i) =>
-    '<div class="chart-card">' +
+  let html = "";
+  let currentGroup = null;
+  defs.forEach((def, i) => {
+    if (def.group && def.group !== currentGroup) {
+      if (currentGroup !== null) html += "</div></div>";
+      html += '<div class="chart-group"><div class="chart-group-title">' +
+        escapeHtml(def.group) + '</div><div class="chart-group-grid">';
+      currentGroup = def.group;
+    }
+    html += '<div class="chart-card">' +
       '<div class="chart-head"><span class="t">' + def.title + '</span>' +
       '<span class="v" id="' + (isGpu ? "gd" : "ch") + '-now-' + i + '">' + dash + '</span></div>' +
       '<canvas class="chart" id="' + (isGpu ? "gd" : "ch") + '-chart-' + i + '"></canvas>' +
-    '</div>').join("");
+    '</div>';
+  });
+  if (currentGroup !== null) html += "</div></div>";
+  wrap.innerHTML = html;
   wrap.querySelectorAll("canvas.chart").forEach((canvas) => attachChartHover(canvas));
 }
 

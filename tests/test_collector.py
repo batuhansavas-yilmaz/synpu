@@ -153,6 +153,9 @@ def test_dual_gpu_both_listed_and_active_is_busiest():
     d = col.snapshot()
     assert [g["name"] for g in d["gpus"]] == ["RTX 4070 SUPER", "Intel(R) UHD Graphics 770"]
     assert d["gpu"]["name"] == "Intel(R) UHD Graphics 770"
+    sample = col.history.series(60)[0]
+    assert sample["gpu_RTX4070SUPER_usage"] == 5.0
+    assert sample["gpu_IntelRUHDGraphics770_usage"] == 40.0
 
 
 def test_pick_active_prefers_busier_gpu():
