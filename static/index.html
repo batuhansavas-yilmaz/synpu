@@ -757,6 +757,10 @@ function render(d) {
 
   $("val-net-down").textContent = bytesPerSec(net && net.down_bps);
   $("val-net-up").textContent = bytesPerSec(net && net.up_bps);
+  const netMeta = [];
+  if (d.isp) netMeta.push(d.isp);
+  if (d.wifi) netMeta.push(d.wifi);
+  $("net-meta").textContent = netMeta.length ? netMeta.join(" \u00b7 ") : dash;
 
   $("val-fps-app").textContent = fps.app || dash;
   $("val-fps-value").textContent = fps.value != null ? String(Math.round(fps.value)) : dash;
