@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="tr">
 <head>
 <meta charset="utf-8">
@@ -123,7 +123,7 @@ canvas.chart { width: 100%; height: 130px; display: block; touch-action: pan-y; 
   font-size: 13px; font-weight: 700; padding: 10px 12px; cursor: pointer; }
 .btn.accent { background: linear-gradient(90deg, #2563eb, #7c3aed); border: 0; }
 nav.bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; }
-nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr);
+nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr);
   background: rgba(8, 14, 27, .92); backdrop-filter: blur(12px); border-top: 1px solid var(--line);
   padding: 8px 6px 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom) + var(--sab-extra, 0px)); }
 .nav-btn { background: transparent; border: 0; color: var(--muted); display: flex; flex-direction: column;
@@ -213,8 +213,9 @@ nav.bottom .inner {
       "gauges gpus"
       "minis ram"
       "minis disks"
-      "minis net";
-    gap: 12px;
+      "minis net"
+      "minis fans";
+    gap: 14px;
   }
   #screen-home > .card { margin: 0 !important; }
   #screen-home > .gauges { grid-area: gauges; align-content: start; }
@@ -224,6 +225,7 @@ nav.bottom .inner {
   #screen-home > .card:nth-child(5) { grid-area: ram; }
   #screen-home > .card:nth-child(6) { grid-area: disks; }
   #screen-home > .card:nth-child(7) { grid-area: net; }
+  #screen-home > .card:nth-child(8) { grid-area: fans; }
   #screen-charts .seg, #screen-charts .pills { max-width: 560px; }
   #charts-wrap, #gpu-charts {
     display: grid;
@@ -232,12 +234,6 @@ nav.bottom .inner {
   }
   #charts-wrap .chart-card, #gpu-charts .chart-card { margin-bottom: 0; }
   #screen-gpu.active { max-width: 780px; margin: 0 auto; }
-  #screen-system.active {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-    align-items: start;
-  }
   #screen-settings.active {
     display: grid;
     grid-template-columns: 1fr;
@@ -253,7 +249,7 @@ nav.bottom .inner {
   #screen-settings .pc-name { font-size: 16px; }
   #screen-settings .pc-url { font-size: 12px; }
   #screen-settings .btn { font-size: 15px; padding: 14px; }
-  #screen-system > .card, #screen-settings > .card { margin: 0 !important; }
+  #screen-settings > .card { margin: 0 !important; }
   .gauge-wrap { width: 152px; height: 152px; }
   .gauge-center b { font-size: 32px; }
   .gauge-label { font-size: 14px; }
@@ -387,6 +383,14 @@ nav.bottom .inner {
         <span class="muted">Yükleme</span><b id="val-net-up" style="font-variant-numeric:tabular-nums">—</b>
       </div>
     </div>
+
+    <div class="card">
+      <div class="card-title">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>
+        Fanlar
+      </div>
+      <div class="list" id="home-fans"><div class="muted">—</div></div>
+    </div>
   </section>
 
   <section class="screen" id="screen-charts">
@@ -438,71 +442,6 @@ nav.bottom .inner {
       </div>
     </div>
     <div id="gpu-charts" style="margin-top:10px"></div>
-  </section>
-
-  <section class="screen" id="screen-system">
-    <div class="card">
-      <div class="card-title">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
-        İşlemci
-      </div>
-      <div class="muted" id="sys-cpu-name" style="margin-bottom:8px">—</div>
-      <div class="list">
-        <div class="list-item"><span class="muted">Kullanım</span><b id="sys-cpu-usage">—</b></div>
-        <div class="list-item"><span class="muted">Sıcaklık</span><b id="sys-cpu-temp">—</b></div>
-        <div class="list-item"><span class="muted">Frekans</span><b id="sys-cpu-freq">—</b></div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="8.5" cy="12" r="1.6"/><path d="M14 10h4M14 14h4"/></svg>
-        Ekran Kartı
-      </div>
-      <div class="muted" id="sys-gpu-name" style="margin-bottom:8px">—</div>
-      <div class="list">
-        <div class="list-item"><span class="muted">Kullanım</span><b id="sys-gpu-usage">—</b></div>
-        <div class="list-item"><span class="muted">Sıcaklık</span><b id="sys-gpu-temp">—</b></div>
-        <div class="list-item"><span class="muted">VRAM</span><b id="sys-gpu-vram">—</b></div>
-        <div class="list-item"><span class="muted">Güç</span><b id="sys-gpu-power">—</b></div>
-        <div class="list-item"><span class="muted">Frekans</span><b id="sys-gpu-freq">—</b></div>
-      </div>
-      <div class="list" id="sys-gpu-extra" style="margin-top:10px"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="10" rx="2"/><path d="M7 20v-4M12 20v-4M17 20v-4"/></svg>
-        Bellek (RAM)
-      </div>
-      <div class="row-between" style="margin-bottom:8px">
-        <span id="sys-ram-used" style="font-size:13px;font-weight:700">—</span>
-        <span class="muted" id="sys-ram-pct">—</span>
-      </div>
-      <div class="bar"><i class="grad-purple" id="sys-ram-bar" style="width:0%"></i></div>
-    </div>
-    <div class="card">
-      <div class="card-title">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v16M4 8h4M4 16h4"/></svg>
-        Depolama
-      </div>
-      <div class="list" id="sys-disks"><div class="muted">—</div></div>
-    </div>
-    <div class="card">
-      <div class="card-title">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>
-        Fanlar
-      </div>
-      <div class="list" id="sys-fans"><div class="muted">—</div></div>
-    </div>
-    <div class="card">
-      <div class="card-title">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4"/></svg>
-        Ağ
-      </div>
-      <div class="list">
-        <div class="list-item"><span class="muted">İndirme</span><b id="sys-net-down">—</b></div>
-        <div class="list-item"><span class="muted">Yükleme</span><b id="sys-net-up">—</b></div>
-      </div>
-    </div>
   </section>
 
   <section class="screen" id="screen-settings">
@@ -563,10 +502,6 @@ nav.bottom .inner {
     <button class="nav-btn" data-screen="charts" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
       Grafikler
-    </button>
-    <button class="nav-btn" data-screen="system" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
-      Sistem
     </button>
     <button class="nav-btn" data-screen="settings" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.09a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>
@@ -656,15 +591,11 @@ function clearValues() {
    "val-ram-pct", "val-ram-used", "val-fps-app", "val-fps-value",
    "val-net-down", "val-net-up", "home-cpu-name", "home-gpu-name",
    "home-ram-total",
-   "sys-cpu-name", "sys-cpu-usage", "sys-cpu-temp", "sys-cpu-freq",
-   "sys-gpu-name", "sys-gpu-usage", "sys-gpu-temp", "sys-gpu-vram", "sys-gpu-power", "sys-gpu-freq",
-   "sys-ram-used", "sys-ram-pct", "sys-net-down", "sys-net-up",
    "gd-name", "gd-usage"].forEach((id) => { const el = $(id); if (el) el.textContent = dash; });
   setRing("ring-cpu", null); setRing("ring-gpu", null); setRing("ring-gpu-detail", null);
-  setBar("home-ram-bar", 0); setBar("sys-ram-bar", 0);
+  setBar("home-ram-bar", 0);
   $("home-disks").innerHTML = '<div class="muted">' + dash + '</div>';
-  $("sys-disks").innerHTML = '<div class="muted">' + dash + '</div>';
-  $("sys-fans").innerHTML = '<div class="muted">' + dash + '</div>';
+  $("home-fans").innerHTML = '<div class="muted">' + dash + '</div>';
   $("gpu-list-card").hidden = true;
   $("gpu-list").innerHTML = "";
 }
@@ -703,12 +634,8 @@ function render(d) {
   $("val-ram-used").textContent = ram ? gb(ram.used_mb) + " / " + Math.round(ram.total_mb / 1024) + " GB" : dash;
   $("home-ram-total").textContent = ram ? Math.round(ram.percent) + "%" : dash;
   setBar("home-ram-bar", ram && ram.percent);
-  $("sys-ram-used").textContent = ram ? gb(ram.used_mb) + " / " + Math.round(ram.total_mb / 1024) + " GB" : dash;
-  $("sys-ram-pct").textContent = fmt(ram && ram.percent, "%", 0);
-  setBar("sys-ram-bar", ram && ram.percent);
 
   renderDisks("home-disks", disks);
-  renderDisks("sys-disks", disks);
 
   const gpuList = Array.isArray(d.gpus) ? d.gpus : [];
   const gpuCard = $("gpu-list-card");
@@ -721,7 +648,9 @@ function render(d) {
       const vram = g.vram_used_mb != null
         ? (g.vram_used_mb / 1024).toFixed(1) + (g.vram_total_mb != null ? " / " + Math.round(g.vram_total_mb / 1024) : "") + " GB"
         : "";
-      const meta = [usage, temp].join(" \u00b7 ") + (vram ? " \u00b7 " + vram : "");
+      const meta = active
+        ? [usage, temp].join(" \u00b7 ") + (vram ? " \u00b7 " + vram : "")
+        : "Aktif değil";
       return '<div class="gpu-row">' +
         '<span class="gpu-dot" style="background:' + (active ? "#22c55e" : "#33456f") + '"></span>' +
         '<span class="gpu-name">' + escapeHtml(g.name || dash) + '</span>' +
@@ -735,31 +664,12 @@ function render(d) {
 
   $("val-net-down").textContent = bytesPerSec(net && net.down_bps);
   $("val-net-up").textContent = bytesPerSec(net && net.up_bps);
-  $("sys-net-down").textContent = bytesPerSec(net && net.down_bps);
-  $("sys-net-up").textContent = bytesPerSec(net && net.up_bps);
 
   $("val-fps-app").textContent = fps.app || dash;
   $("val-fps-value").textContent = fps.value != null ? String(Math.round(fps.value)) : dash;
 
-  $("sys-cpu-name").textContent = cpu.name || dash;
-  $("sys-cpu-usage").textContent = fmt(cpu.usage_pct, "%", 1);
-  $("sys-cpu-temp").textContent = fmt(cpu.temp_c, "\u00b0C", 1);
-  $("sys-cpu-freq").textContent = ghz(cpu.freq_mhz, 2);
-  $("sys-gpu-name").textContent = gpu && gpu.name ? gpu.name : dash;
-  $("sys-gpu-usage").textContent = fmt(gpu && gpu.usage_pct, "%", 1);
-  $("sys-gpu-temp").textContent = fmt(gpu && gpu.temp_c, "\u00b0C", 1);
-  $("sys-gpu-vram").textContent = vramText;
-  $("sys-gpu-power").textContent = fmt(gpu && gpu.power_w, " W", 0);
-  $("sys-gpu-freq").textContent = ghz(gpu && gpu.freq_mhz, 1);
-  const gpuOthers = (Array.isArray(d.gpus) ? d.gpus : []).filter((g) => !gpu || g.name !== gpu.name);
-  $("sys-gpu-extra").innerHTML = gpuOthers.map((g) =>
-    '<div class="gpu-row"><span class="gpu-dot" style="background:#33456f"></span>' +
-    '<span class="gpu-name">' + escapeHtml(g.name || dash) + '</span>' +
-    '<span class="gpu-meta">Aktif değil</span></div>'
-  ).join("");
-
   const fans = Array.isArray(d.fans) ? d.fans : [];
-  $("sys-fans").innerHTML = fans.length
+  $("home-fans").innerHTML = fans.length
     ? fans.map((f) => '<div class="list-item"><span class="muted">' + escapeHtml(f.name) + '</span><b>' + Math.round(f.rpm) + ' RPM</b></div>').join("")
     : '<div class="muted">' + dash + '</div>';
 }
@@ -864,7 +774,7 @@ function tryWs(pc) {
 
 function setScreen(name) {
   screen = name;
-  ["home", "charts", "system", "settings", "gpu"].forEach((s) => {
+  ["home", "charts", "settings", "gpu"].forEach((s) => {
     const el = $("screen-" + s);
     if (el) el.classList.toggle("active", s === name);
   });
