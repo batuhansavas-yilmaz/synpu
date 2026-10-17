@@ -570,11 +570,7 @@ nav.bottom .inner {
       <div class="card-title">Yenileme</div>
       <div class="muted">Canlı akış: 0.1 sn (WebSocket). Bağlantı koparsa 1 sn yoklama.</div>
       <button class="btn" id="export-csv" type="button" style="width:100%;margin-top:10px">Grafik verilerini indir (CSV)</button>
-      <button class="btn" id="export-pdf" type="button" style="width:100%;margin-top:8px">Tablolu rapor (PDF / Yazdır)</button>
-      <div class="row-between" style="margin-top:10px">
-        <span class="muted">Başlangıçta çalıştır</span>
-        <button class="btn" id="startup-toggle" type="button">—</button>
-      </div>
+      <button class="btn" id="export-pdf" type="button" style="width:100%;margin-top:8px">Tablolu rapor (PDF)</button>
     </div>
     <div class="card">
       <div class="card-title">Hakkında</div>
@@ -1503,7 +1499,6 @@ $("add-modal").addEventListener("click", (ev) => { if (ev.target === $("add-moda
 function openSettingsModal() {
   renderSettings();
   refreshVersion();
-  refreshStartup();
   $("settings-modal").hidden = false;
 }
 
@@ -1544,9 +1539,18 @@ function csvDate(value) {
     " " + pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
 }
 
+function gpuKeyToName(key) {
+  for (const gpu of lastGpus) {
+    if (gpu && gpu.name && String(gpu.name).replace(/[^A-Za-z0-9]/g, "") === key) {
+      return gpu.name;
+    }
+  }
+  return key;
+}
+
 function csvLabel(key) {
   if (CSV_LABELS[key]) return CSV_LABELS[key][0];
-  if (key.startsWith("cpu_core_")) return "Çekirdek " + key.slice(9) + " (%)";
+  if (key.startsWith("cpu_core_")) return "CPU Çekirdek " + key.slice(9) + " (%)";
   const diskMatch = key.match(/^disk_(.+)_(percent|temp|read|write)$/);
   if (diskMatch) {
     const names = { percent: "Kullanım (%)", temp: "Sıcaklık (°C)", read: "Okuma (MB/s)", write: "Yazma (MB/s)" };
@@ -1555,7 +1559,7 @@ function csvLabel(key) {
   const gpuMatch = key.match(/^gpu_(.+)_(usage|temp|power|fan)$/);
   if (gpuMatch) {
     const names = { usage: "Kullanım (%)", temp: "Sıcaklık (°C)", power: "Güç (W)", fan: "Fan (%)" };
-    return "GPU " + gpuMatch[1] + " " + names[gpuMatch[2]];
+    return "GPU " + gpuKeyToName(gpuMatch[1]) + " " + names[gpuMatch[2]];
   }
   return key;
 }
@@ -1581,8 +1585,7 @@ function csvNumber(key, value) {
   return num.toFixed(digits).replace(".", ",");
 }
 
-async function exportHistoryCsv() {
-  const pc = pcs[active];
+async function exportHistoryCsv() {  const pc = pcs[active];
   if (!pc) return;
   try {
     const res = await fetch(pc.url + "/api/history?minutes=60", { cache: "no-store" });
@@ -1714,61 +1717,189 @@ async function buildHistoryReport() {
   return html;
 }
 
+function pdfLatin(text) {
+  const map = { "ı": "i", "İ": "I", "ş": "s", "Ş": "S", "ğ": "g", "Ğ": "G", "ç": "c", "Ç": "C",
+    "ö": "o", "Ö": "O", "ü": "u", "Ü": "U", "â": "a", "Â": "A", "—": "-", "–": "-", "·": "-",
+    "“": '"', "”": '"', "’": "'", "‘": "'" };
+  let out = "";
+  for (const ch of String(text)) out += map[ch] !== undefined ? map[ch] : ch;
+  return out;
+}
+
+function pdfText(text) {
+  return pdfLatin(text).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+}
+
+function pdfAssemble(streams, width, height) {
+  const objects = [
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>",
+    "",
+  ];
+  const pageIndexes = [];
+  streams.forEach((stream) => {
+    objects.push("<< /Length " + stream.length + " >>\nstream\n" + stream + "\nendstream");
+    const streamIndex = objects.length;
+    objects.push("<< /Type /Page /Parent 3 0 R /MediaBox [0 0 " + width + " " + height +
+      "] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents " + streamIndex + " 0 R >>");
+    pageIndexes.push(objects.length);
+  });
+  objects[2] = "<< /Type /Pages /Kids [" + pageIndexes.map((index) => index + " 0 R").join(" ") +
+    "] /Count " + pageIndexes.length + " >>";
+  objects.push("<< /Type /Catalog /Pages 3 0 R >>");
+  const catalogIndex = objects.length;
+  let pdf = "%PDF-1.4\n";
+  const offsets = [];
+  objects.forEach((body, index) => {
+    offsets.push(pdf.length);
+    pdf += (index + 1) + " 0 obj\n" + body + "\nendobj\n";
+  });
+  const xrefStart = pdf.length;
+  pdf += "xref\n0 " + (objects.length + 1) + "\n0000000000 65535 f \n";
+  offsets.forEach((offset) => { pdf += String(offset).padStart(10, "0") + " 00000 n \n"; });
+  pdf += "trailer\n<< /Size " + (objects.length + 1) + " /Root " + catalogIndex + " 0 R >>\nstartxref\n" +
+    xrefStart + "\n%%EOF";
+  return pdf;
+}
+
+async function collectHistoryRows() {
+  const pc = pcs[active];
+  if (!pc) return null;
+  const res = await fetch(pc.url + "/api/history?minutes=60", { cache: "no-store" });
+  const data = await res.json();
+  const samples = data.samples || [];
+  if (!samples.length) return null;
+  const buckets = new Map();
+  samples.forEach((sample) => {
+    const key = Math.floor(Number(sample.ts) / 60);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(sample);
+  });
+  const average = (bucket, field) => {
+    const values = bucket.map((sample) => sample[field])
+      .filter((value) => value !== null && value !== undefined && isFinite(Number(value)))
+      .map(Number);
+    return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+  };
+  const diskLabels = lastDisks.slice(0, 4).map((disk) => disk.label || "");
+  const rows = Array.from(buckets.entries()).sort((a, b) => a[0] - b[0]).map(([minute, bucket]) => ({
+    time: new Date(Number(minute) * 60000),
+    values: [
+      average(bucket, "cpu_usage"),
+      average(bucket, "cpu_temp"),
+      average(bucket, "cpu_freq"),
+      average(bucket, "gpu_usage"),
+      average(bucket, "gpu_temp"),
+      average(bucket, "gpu_power"),
+      average(bucket, "ram_percent"),
+      ...lastDisks.slice(0, 4).map((disk) => average(bucket, "disk_" +
+        String(disk.label || "").replace(/[^A-Za-z0-9]/g, "") + "_percent")),
+      average(bucket, "net_down"),
+      average(bucket, "net_up"),
+    ],
+  }));
+  if (!rows.length) return null;
+  return { pc, rows, diskLabels, first: rows[0].time, last: rows[rows.length - 1].time };
+}
+
+function pdfNumber(value, digits) {
+  if (value === null || value === undefined || !isFinite(Number(value))) return "-";
+  return Number(value).toFixed(digits).replace(".", ",");
+}
+
+function buildPdfReport(report) {
+  const W = 842, H = 595, margin = 24;
+  const headers = ["Saat", "CPU %", "CPU °C", "CPU GHz", "GPU %", "GPU °C", "GPU W", "RAM %"];
+  report.diskLabels.forEach((label) => headers.push("Disk " + label + " %"));
+  headers.push("İndirme MB/s", "Yükleme MB/s");
+  const fixed = 42 + 58 + 58;
+  const shared = (W - 2 * margin - fixed) / Math.max(1, headers.length - 3);
+  const widths = headers.map((header, index) =>
+    index === 0 ? 42 : index >= headers.length - 2 ? 58 : shared);
+  const titleHeight = 58;
+  const headerHeight = 16;
+  const rowHeight = 14;
+  const bottom = 28;
+  const tableTop = H - titleHeight;
+  const perPage = Math.max(1, Math.floor((tableTop - bottom - headerHeight) / rowHeight));
+  const pages = [];
+  for (let start = 0; start < report.rows.length; start += perPage) {
+    pages.push(report.rows.slice(start, start + perPage));
+  }
+  const day = (date) => String(date.getDate()).padStart(2, "0") + "." +
+    String(date.getMonth() + 1).padStart(2, "0") + "." + date.getFullYear();
+  const meta = day(report.first) + " " + reportTime(report.first) + " - " + day(report.last) + " " +
+    reportTime(report.last) + " · " + report.pc.name + " · dakikalık ortalamalar";
+  const streams = pages.map((pageRows, pageIndex) => {
+    let stream = "";
+    const drawText = (font, size, x, y, text, alignRight) => {
+      const clean = pdfText(text);
+      const textWidth = clean.length * size * 0.52;
+      const drawX = alignRight ? x - textWidth : x;
+      stream += "BT /" + font + " " + size + " Tf " + drawX.toFixed(1) + " " + y.toFixed(1) +
+        " Td (" + clean + ") Tj ET\n";
+    };
+    drawText("F2", 15, margin, H - 30, "Synpu Raporu");
+    drawText("F1", 8, margin, H - 44, meta);
+    let y = tableTop;
+    stream += "0.93 0.95 0.99 rg " + margin + " " + (y - headerHeight) + " " + (W - 2 * margin) + " " +
+      headerHeight + " re f\n";
+    let x = margin;
+    headers.forEach((header, index) => {
+      drawText("F2", 7, x + widths[index] - 2, y - headerHeight + 5, header, true);
+      x += widths[index];
+    });
+    y -= headerHeight;
+    pageRows.forEach((row, rowIndex) => {
+      y -= rowHeight;
+      if (rowIndex % 2 === 1) {
+        stream += "0.965 0.975 0.99 rg " + margin + " " + y + " " + (W - 2 * margin) + " " +
+          rowHeight + " re f\n";
+      }
+      stream += "0.84 0.87 0.93 RG 0.4 w " + margin + " " + y + " m " + (W - margin) + " " + y + " l S\n";
+      const cells = [reportTime(row.time)];
+      const values = row.values;
+      cells.push(pdfNumber(values[0], 0), pdfNumber(values[1], 1),
+        pdfNumber(values[2] !== null ? values[2] / 1000 : null, 2),
+        pdfNumber(values[3], 0), pdfNumber(values[4], 1), pdfNumber(values[5], 0), pdfNumber(values[6], 0));
+      const diskCount = report.diskLabels.length;
+      for (let index = 0; index < diskCount; index++) {
+        cells.push(pdfNumber(values[7 + index], 0));
+      }
+      cells.push(pdfNumber(values[7 + diskCount] !== null ? values[7 + diskCount] / 1048576 : null, 2),
+        pdfNumber(values[8 + diskCount] !== null ? values[8 + diskCount] / 1048576 : null, 2));
+      let cellX = margin;
+      cells.forEach((cell, index) => {
+        drawText("F1", 8, cellX + widths[index] - 2, y + 4, cell, true);
+        cellX += widths[index];
+      });
+    });
+    drawText("F1", 7, W - margin, 14, "Sayfa " + (pageIndex + 1) + " / " + pages.length, true);
+    return stream;
+  });
+  return pdfAssemble(streams, W, H);
+}
+
 async function exportHistoryPdf() {
-  const html = await buildHistoryReport();
-  if (!html) return;
-  const frame = document.createElement("iframe");
-  frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
-  document.body.appendChild(frame);
-  const doc = frame.contentWindow.document;
-  doc.open();
-  doc.write(html);
-  doc.close();
-  setTimeout(() => {
-    try {
-      frame.contentWindow.focus();
-      frame.contentWindow.print();
-    } catch (e) {}
-    setTimeout(() => frame.remove(), 30000);
-  }, 300);
+  try {
+    const report = await collectHistoryRows();
+    if (!report) return;
+    const pdf = buildPdfReport(report);
+    const bytes = new Uint8Array(pdf.length);
+    for (let index = 0; index < pdf.length; index++) bytes[index] = pdf.charCodeAt(index) & 0xff;
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "synpu-rapor.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (e) {}
 }
 
 $("export-pdf").addEventListener("click", exportHistoryPdf);
-
-let startupEnabled = null;
-
-function updateStartupButton() {
-  const button = $("startup-toggle");
-  if (!button) return;
-  button.textContent = startupEnabled === null ? "—" : (startupEnabled ? "Açık" : "Kapalı");
-}
-
-async function refreshStartup() {
-  const pc = pcs[active];
-  if (!pc) return;
-  try {
-    const res = await fetch(pc.url + "/api/startup", { cache: "no-store" });
-    const data = await res.json();
-    startupEnabled = !!data.enabled;
-  } catch (e) {
-    startupEnabled = null;
-  }
-  updateStartupButton();
-}
-
-async function toggleStartup() {
-  const pc = pcs[active];
-  if (!pc || startupEnabled === null) return;
-  const target = !startupEnabled;
-  try {
-    const res = await fetch(pc.url + "/api/startup?enabled=" + target, { method: "POST" });
-    const data = await res.json();
-    startupEnabled = !!data.enabled;
-  } catch (e) {}
-  updateStartupButton();
-}
-
-$("startup-toggle").addEventListener("click", toggleStartup);
 
 renderSettings();
 activate(active);

@@ -8,7 +8,7 @@ import pystray
 import qrcode
 from PIL import Image, ImageDraw, ImageTk
 
-from synpu import config
+from synpu import config, startup
 from synpu.net.addresses import candidate_ips
 
 BG = "#0a1124"
@@ -176,6 +176,13 @@ def run_ui(url_provider: Callable[[], "str | None"], state_dir: Path,
             pass
         root.after(0, root.destroy)
 
+    def toggle_startup(tray_icon, item):
+        try:
+            startup.set_enabled(not startup.is_enabled())
+            tray_icon.update_menu()
+        except Exception:
+            pass
+
     root.protocol("WM_DELETE_WINDOW", root.withdraw)
 
     icon = pystray.Icon(
@@ -185,6 +192,11 @@ def run_ui(url_provider: Callable[[], "str | None"], state_dir: Path,
         menu=pystray.Menu(
             pystray.MenuItem("QR'ı Göster", lambda: show_window()),
             pystray.MenuItem("Adresi Kopyala", lambda: root.after(0, copy_url)),
+            pystray.MenuItem(
+                "Başlangıçta çalıştır",
+                toggle_startup,
+                checked=lambda item: startup.is_enabled(),
+            ),
             pystray.MenuItem("Çıkış", lambda: quit_app()),
         ),
     )
