@@ -24,7 +24,7 @@ def is_allowed_origin(origin: str | None) -> bool:
 
 
 def create_app(collector, push_interval: float = config.PUSH_INTERVAL_S,
-               static_dir: Path = DEFAULT_STATIC_DIR) -> FastAPI:
+               static_dir: Path = DEFAULT_STATIC_DIR, on_show=None) -> FastAPI:
     app = FastAPI()
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
     app.add_middleware(
@@ -41,6 +41,15 @@ def create_app(collector, push_interval: float = config.PUSH_INTERVAL_S,
     @app.get("/api/snapshot")
     def snapshot():
         return collector.snapshot()
+
+    @app.get("/api/show")
+    def show():
+        if on_show is not None:
+            try:
+                on_show()
+            except Exception:
+                pass
+        return {"ok": True}
 
     @app.get("/api/history")
     def history(minutes: int = 60):

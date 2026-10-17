@@ -97,7 +97,8 @@ def main() -> None:
         ttl=config.PUSH_INTERVAL_S,
     )
 
-    app = create_app(collector)
+    show_event = threading.Event()
+    app = create_app(collector, on_show=show_event.set)
     server = threading.Thread(
         target=uvicorn.run,
         kwargs={"app": app, "host": "0.0.0.0", "port": config.PORT, "log_level": "warning"},
@@ -116,7 +117,7 @@ def main() -> None:
     threading.Thread(target=sampling_loop, daemon=True).start()
 
     try:
-        run_ui(_url_provider, STATE_DIR)
+        run_ui(_url_provider, STATE_DIR, show_event=show_event)
     finally:
         sampler.stop()
 

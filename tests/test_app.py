@@ -51,6 +51,19 @@ def test_static_manifest_served(client):
     assert r.json()["name"] == "Synpu"
 
 
+def test_show_endpoint_calls_callback(tmp_path):
+    calls = []
+    (tmp_path / "index.html").write_text("<html><body>Synpu</body></html>", encoding="utf-8")
+    (tmp_path / "manifest.json").write_text('{"name": "Synpu"}', encoding="utf-8")
+    app = create_app(FakeCollector(), push_interval=0.05, static_dir=tmp_path,
+                     on_show=lambda: calls.append(1))
+    with TestClient(app) as show_client:
+        r = show_client.get("/api/show")
+    assert r.status_code == 200
+    assert r.json() == {"ok": True}
+    assert calls == [1]
+
+
 def test_history_endpoint(client):
     r = client.get("/api/history?minutes=5")
     assert r.status_code == 200

@@ -11,6 +11,13 @@ from PIL import Image, ImageDraw, ImageTk
 from synpu import config
 from synpu.net.addresses import candidate_ips
 
+BG = "#0a1124"
+PANEL = "#0f1a33"
+BORDER = "#24365e"
+TEXT = "#e8eefc"
+MUTED = "#8b97ad"
+ACCENT = "#2563eb"
+
 
 def build_qr_image(url: str) -> Image.Image:
     qr = qrcode.QRCode(box_size=8, border=2)
@@ -39,43 +46,81 @@ def should_autoshow(state_dir: Path) -> bool:
 
 
 def _tray_image() -> Image.Image:
-    img = Image.new("RGB", (64, 64), "#0f1117")
+    img = Image.new("RGB", (64, 64), "#0a1124")
     draw = ImageDraw.Draw(img)
-    draw.ellipse((4, 4, 60, 60), fill="#2b3149")
+    draw.ellipse((4, 4, 60, 60), fill="#1b2a4a")
     draw.text((26, 22), "S", fill="white")
     return img
 
 
-def run_ui(url_provider: Callable[[], str], state_dir: Path) -> None:
+def _app_icon(size: int) -> Image.Image:
+    path = Path(__file__).resolve().parents[3] / "static" / "icon-192.png"
+    try:
+        return Image.open(path).convert("RGBA").resize((size, size))
+    except Exception:
+        return _tray_image().resize((size, size))
+
+
+def run_ui(url_provider: Callable[[], "str | None"], state_dir: Path,
+           show_event: threading.Event | None = None) -> None:
     root = tk.Tk()
     root.title("Synpu — Telefonla Bağlan")
-    root.geometry("360x500")
+    root.geometry("380x640")
     root.resizable(False, False)
-    root.configure(bg="#0f1117")
+    root.configure(bg=BG)
+    try:
+        icon_photo = ImageTk.PhotoImage(_app_icon(64))
+        root.iconphoto(True, icon_photo)
+        root._icon_photo = icon_photo
+    except Exception:
+        pass
 
-    qr_label = tk.Label(root, bg="#0f1117", bd=0)
-    qr_label.pack(pady=(16, 8))
+    header = tk.Frame(root, bg=BG)
+    header.pack(fill="x", padx=20, pady=(18, 10))
+    try:
+        logo_photo = ImageTk.PhotoImage(_app_icon(44))
+        logo_label = tk.Label(header, image=logo_photo, bg=BG, bd=0)
+        logo_label.image = logo_photo
+        logo_label.pack(side="left")
+    except Exception:
+        pass
+    title_box = tk.Frame(header, bg=BG)
+    title_box.pack(side="left", padx=(10, 0))
+    tk.Label(title_box, text="Synpu", fg=TEXT, bg=BG,
+             font=("Segoe UI", 17, "bold")).pack(anchor="w")
+    tk.Label(title_box, text="Telefonla bağlanmak için QR'ı okut", fg=MUTED, bg=BG,
+             font=("Segoe UI", 9)).pack(anchor="w")
 
-    url_var = tk.StringVar(value="...")
-    tk.Label(root, textvariable=url_var, fg="#e6e8ee", bg="#0f1117",
-             font=("Segoe UI", 13, "bold")).pack()
+    qr_panel = tk.Frame(root, bg=PANEL, highlightbackground=BORDER, highlightthickness=1)
+    qr_panel.pack(padx=20)
+    qr_label = tk.Label(qr_panel, bg="white", bd=0, padx=12, pady=12)
+    qr_label.pack(padx=14, pady=14)
 
-    tk.Label(root, text="Diğer adresler:", fg="#9aa1b2", bg="#0f1117",
-             font=("Segoe UI", 10)).pack(pady=(12, 2))
-    others = tk.Text(root, height=4, width=42, state="disabled", bd=0,
-                     bg="#171a23", fg="#9aa1b2", font=("Segoe UI", 10))
-    others.pack()
+    url_var = tk.StringVar(value="Ağ bekleniyor...")
+    tk.Label(root, textvariable=url_var, fg=TEXT, bg=BG,
+             font=("Segoe UI", 14, "bold")).pack(pady=(12, 2))
 
     def copy_url():
-        text = url_var.get()
-        if text and text != "...":
+        text = state["url"]
+        if text:
             root.clipboard_clear()
             root.clipboard_append(text)
 
-    tk.Button(root, text="Adresi Kopyala", command=copy_url,
-              bg="#232735", fg="#e6e8ee", bd=0, padx=12, pady=6).pack(pady=12)
+    tk.Button(root, text="Adresi Kopyala", command=copy_url, bg=ACCENT, fg="white",
+              activebackground="#1d4ed8", activeforeground="white", relief="flat",
+              bd=0, padx=16, pady=7, font=("Segoe UI", 10, "bold"),
+              cursor="hand2").pack(pady=(8, 14))
 
-    state = {"url": None}
+    tk.Label(root, text="Diğer adresler", fg=MUTED, bg=BG,
+             font=("Segoe UI", 8)).pack()
+    others_label = tk.Label(root, text="(yok)", fg=MUTED, bg=BG, font=("Segoe UI", 9))
+    others_label.pack(pady=(2, 4))
+
+    tk.Label(root, text="Pencereyi kapatabilirsin — Synpu tepside çalışmaya devam eder.",
+             fg=MUTED, bg=BG, font=("Segoe UI", 8), wraplength=320,
+             justify="center").pack(side="bottom", pady=(0, 14))
+
+    state: dict = {"url": None}
 
     def refresh():
         try:
@@ -98,10 +143,7 @@ def run_ui(url_provider: Callable[[], str], state_dir: Path) -> None:
         except Exception:
             lines = []
         other_lines = [line for line in lines if line != state["url"]]
-        others.configure(state="normal")
-        others.delete("1.0", "end")
-        others.insert("1.0", "\n".join(other_lines) if other_lines else "(yok)")
-        others.configure(state="disabled")
+        others_label.configure(text="\n".join(other_lines) if other_lines else "(yok)")
         root.after(30000, refresh)
 
     def show_window():
@@ -128,7 +170,14 @@ def run_ui(url_provider: Callable[[], str], state_dir: Path) -> None:
     )
     threading.Thread(target=icon.run, daemon=True).start()
 
+    def poll_show():
+        if show_event is not None and show_event.is_set():
+            show_event.clear()
+            show_window()
+        root.after(250, poll_show)
+
     refresh()
+    poll_show()
     if not should_autoshow(state_dir):
         root.withdraw()
     root.mainloop()

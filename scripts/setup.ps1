@@ -5,12 +5,28 @@ $ProgressPreference = "SilentlyContinue"
 
 $identity = [Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()
 if (-not $identity.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "Bu betik yonetici olarak calistirilmalidir. setup.bat dosyasini cift tiklayin." -ForegroundColor Red
+    Write-Host "Bu betik yonetici olarak calistirilmalidir." -ForegroundColor Red
     exit 1
 }
 
-$RepoRoot = Split-Path -Parent $PSScriptRoot
-Set-Location $RepoRoot
+$SourceRoot = Split-Path -Parent $PSScriptRoot
+$InstallRoot = Join-Path $env:LOCALAPPDATA "Synpu\app"
+
+if ($SourceRoot.TrimEnd("\") -ne $InstallRoot.TrimEnd("\")) {
+    Write-Host "Dosyalar kurulum klasorune kopyalaniyor: $InstallRoot"
+    New-Item -ItemType Directory -Force -Path $InstallRoot | Out-Null
+    $exclude = @(".venv", "third_party", ".git", ".superpowers", "__pycache__", ".pytest_cache", "dist")
+    robocopy $SourceRoot $InstallRoot /E /NFL /NDL /NJH /NJS /XD $exclude /XF *.pyc | Out-Null
+    if ($LASTEXITCODE -ge 8) {
+        Write-Host "Dosya kopyalama basarisiz (robocopy $LASTEXITCODE)." -ForegroundColor Red
+        exit 1
+    }
+    $LASTEXITCODE = 0
+    $licenseDir = Join-Path $InstallRoot "third_party"
+    New-Item -ItemType Directory -Force -Path $licenseDir | Out-Null
+    Get-ChildItem (Join-Path $SourceRoot "third_party") -Filter *.txt -ErrorAction SilentlyContinue | Copy-Item -Destination $licenseDir -Force
+}
+Set-Location $InstallRoot
 
 Write-Host "== Synpu kurulumu ==" -ForegroundColor Cyan
 
@@ -71,7 +87,7 @@ if (-not $pawnio) {
 }
 
 # 4) PresentMon
-$pmExe = Join-Path $RepoRoot "third_party\presentmon\PresentMon.exe"
+$pmExe = Join-Path $InstallRoot "third_party\presentmon\PresentMon.exe"
 if (-not (Test-Path $pmExe)) {
     Write-Host "PresentMon indiriliyor..."
     New-Item -ItemType Directory -Force -Path (Split-Path $pmExe) | Out-Null
@@ -88,7 +104,7 @@ if (-not (Test-Path $pmExe)) {
 }
 
 # 5) LibreHardwareMonitor
-$lhmDll = Join-Path $RepoRoot "third_party\lhm\LibreHardwareMonitorLib.dll"
+$lhmDll = Join-Path $InstallRoot "third_party\lhm\LibreHardwareMonitorLib.dll"
 if (-not (Test-Path $lhmDll)) {
     Write-Host "LibreHardwareMonitor indiriliyor..."
     New-Item -ItemType Directory -Force -Path (Split-Path $lhmDll) | Out-Null
@@ -112,7 +128,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# 7) Zamanlanmis gorev
+# 7) Zamanlanmis gorev + kisayollar
 & (Join-Path $PSScriptRoot "install_task.ps1")
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Zamanlanmis gorev adimi basarisiz oldu." -ForegroundColor Red
@@ -132,10 +148,10 @@ for ($i = 0; $i -lt 20; $i++) {
     }
 }
 if (-not $ok) {
-    Write-Host "UYARI: Sunucuya erisilemedi (port $port). Penceredeki hata mesajina bakin." -ForegroundColor Yellow
+    Write-Host "UYARI: Sunucuya erisilemedi (port $port)." -ForegroundColor Yellow
 }
 
 Write-Host ""
 Write-Host "Kurulum tamamlandi. Synpu baslatildi." -ForegroundColor Green
-Write-Host "Telefonla baglanmak icin PC'de acilan penceredeki QR kodu okutun."
+Write-Host "Masaustundeki Synpu simgesine tiklayarak QR penceresini acabilirsin."
 exit 0

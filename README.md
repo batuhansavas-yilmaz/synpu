@@ -25,9 +25,13 @@ Ayrıca **Grafikler** sekmesi son 1 saatin geçmişini gösterir (1dk/5dk/15dk/1
 
 ## Kurulum
 
-1. Bu klasörü PC'ye indir (ZIP'i çıkar veya `git clone`).
-2. `setup.bat` dosyasına çift tıkla ve UAC onayını ver.
-3. Kurulum biter: bağımlılıklar indirilir, güvenlik duvarı kuralı eklenir ve Synpu otomatik başlar. Her açılışta kendiliğinden çalışır.
+1. `SynpuSetup.exe` dosyasını çalıştır ve UAC onayını ver.
+2. Kurulum, gerekli bileşenleri internetten indirir (birkaç dakika sürebilir).
+3. Masaüstünde **Synpu** simgesi oluşur. Synpu arka planda başlar ve bilgisayar her açıldığında otomatik çalışır — **Görev Yöneticisi → Başlangıç uygulamaları** listesinde "Synpu" olarak görünür ve oradan açılıp kapatılabilir.
+4. Telefonla bağlanmak için masaüstündeki **Synpu** simgesine tıkla; QR penceresi açılır (uygulama zaten çalışıyorsa pencere öne getirilir).
+5. Telefonda sayfa açılınca çıkan **"Ekle"** uyarısıyla Synpu'yu ana ekrana ekleyebilirsin (destekleyen tarayıcıda tek dokunuş; iOS'ta Paylaş → "Ana Ekrana Ekle").
+
+Kaynaktan kurulum (geliştiriciler için): `setup.bat`.
 
 Kurulum sırasında internetten indirilenler: [uv](https://astral.sh/uv) (Python paket yöneticisi), [PresentMon v2.6.0](https://github.com/GameTechDev/PresentMon) (FPS ölçümü), [LibreHardwareMonitor v0.9.6](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (CPU sensörleri) ve [PawnIO v2.2.0](https://pawnio.eu) (imzalı sensör sürücüsü). Kapalı kaynak hiçbir bileşen yoktur.
 
@@ -54,12 +58,14 @@ Aynı uygulamayı diğer PC'lere de kur. Telefon sayfasındaki **"+ PC ekle"** d
 
 ## Kaldırma
 
+**Ayarlar → Uygulamalar → Synpu → Kaldır** (kısayollar, görev ve güvenlik duvarı kuralı otomatik silinir; program dosyaları `%LOCALAPPDATA%\Synpu` altındadır).
+
+Manuel kaldırma (gerekirse):
+
 ```powershell
 Unregister-ScheduledTask -TaskName Synpu -Confirm:$false
 Remove-NetFirewallRule -DisplayName "Synpu (TCP 8787)"
 ```
-
-Sonra klasörü sil. (İsteğe bağlı: `%LOCALAPPDATA%\Synpu` klasörünü de silebilirsin.)
 
 ## Lisanslar
 

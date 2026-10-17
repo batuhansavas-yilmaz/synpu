@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#060b17">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Synpu">
 <link rel="apple-touch-icon" href="/static/icon-180.png">
 <link rel="icon" type="image/png" href="/static/icon-192.png">
 <link rel="manifest" href="/static/manifest.json">
@@ -116,6 +117,17 @@ nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-templa
   align-items: center; gap: 3px; font-size: 10px; font-weight: 600; cursor: pointer; padding: 4px 0; }
 .nav-btn.active { color: #6ea8ff; }
 .nav-btn svg { width: 22px; height: 22px; }
+.install-banner { position: fixed; left: 50%; transform: translateX(-50%); bottom: 86px; z-index: 30;
+  width: min(440px, calc(100% - 24px)); display: flex; gap: 10px; align-items: center; padding: 12px 14px;
+  border-radius: 16px; background: linear-gradient(180deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.04)), rgba(9, 15, 28, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.18); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.40); }
+.install-banner[hidden] { display: none; }
+.install-text { flex: 1; font-size: 12px; font-weight: 700; color: var(--text); }
+.install-text small { display: block; color: var(--muted); font-size: 10px; font-weight: 400; margin-top: 2px; }
+.install-btn { background: var(--blue); border: 0; color: #fff; border-radius: 10px; padding: 8px 12px;
+  font-size: 12px; font-weight: 700; cursor: pointer; }
+.install-x { background: transparent; border: 0; color: var(--muted); font-size: 14px; cursor: pointer; padding: 4px; }
 html { background: #081120; }
 body {
   background:
@@ -168,6 +180,7 @@ nav.bottom .inner {
 }
 .pc-item.active { background: rgba(110, 168, 255, 0.14); border-color: rgba(110, 168, 255, 0.35); }
 @media (min-width: 900px) {
+  .install-banner { bottom: 100px; }
   .app { max-width: 1100px; padding: 20px 20px 120px; }
   #screen-home.active {
     display: grid;
@@ -441,6 +454,14 @@ nav.bottom .inner {
       </div>
     </div>
   </section>
+</div>
+
+<div class="install-banner" id="install-banner" hidden>
+  <div class="install-text">Synpu'yu ana ekrana ekle
+    <small id="install-sub">Uygulama gibi tam ekran açılır</small>
+  </div>
+  <button class="install-btn" id="install-add" type="button">Ekle</button>
+  <button class="install-x" id="install-close" type="button" aria-label="Kapat">✕</button>
 </div>
 
 <nav class="bottom">
@@ -962,6 +983,54 @@ $("add-pc").addEventListener("click", () => {
 renderSettings();
 activate(active);
 setScreen("home");
+
+let installPrompt = null;
+const INSTALL_KEY = "synpu.installDismissedAt";
+const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+
+function isIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+function showInstallBanner() {
+  if (standalone) return;
+  let dismissed = 0;
+  try { dismissed = Number(localStorage.getItem(INSTALL_KEY)) || 0; } catch (e) {}
+  if (dismissed && Date.now() - dismissed < 7 * 86400000) return;
+  $("install-banner").hidden = false;
+}
+
+window.addEventListener("beforeinstallprompt", (ev) => {
+  ev.preventDefault();
+  installPrompt = ev;
+  showInstallBanner();
+});
+
+window.addEventListener("appinstalled", () => {
+  installPrompt = null;
+  $("install-banner").hidden = true;
+  try { localStorage.setItem(INSTALL_KEY, String(Date.now())); } catch (e) {}
+});
+
+$("install-close").addEventListener("click", () => {
+  $("install-banner").hidden = true;
+  try { localStorage.setItem(INSTALL_KEY, String(Date.now())); } catch (e) {}
+});
+
+$("install-add").addEventListener("click", async () => {
+  if (installPrompt) {
+    installPrompt.prompt();
+    try { await installPrompt.userChoice; } catch (e) {}
+    installPrompt = null;
+    $("install-banner").hidden = true;
+    return;
+  }
+  $("install-sub").textContent = isIOS()
+    ? "Safari'de Paylaş (□↑) → 'Ana Ekrana Ekle' seç"
+    : "Tarayıcı menüsü (⋮) → 'Ana ekrana ekle' seç";
+});
+
+setTimeout(showInstallBanner, 1800);
 </script>
 </body>
 </html>
