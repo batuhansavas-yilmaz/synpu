@@ -219,13 +219,14 @@ nav.bottom .inner {
   #screen-home > .card { margin: 0 !important; }
   #screen-home > .gauges { grid-column: 1; grid-row: 1 / span 2; align-content: start; }
   #screen-home > .mini-grid { grid-column: 1; grid-row: 3; align-content: start; }
-  #screen-home > .card:nth-child(8) { grid-column: 1; grid-row: 4 / span 2; }
+  #screen-home > .card:nth-child(4) { grid-column: 1; grid-row: 4; }
+  #screen-home > .card:nth-child(9) { grid-column: 1; grid-row: 5; }
+  #screen-home > .card:nth-child(10) { grid-column: 1 / -1; grid-row: 6; }
   #screen-home > .card:nth-child(1) { grid-column: 2; grid-row: 1; }
   #screen-home > #gpu-list-card { grid-column: 2; grid-row: 2; }
-  #screen-home > .card:nth-child(5) { grid-column: 2; grid-row: 3; }
-  #screen-home > .card:nth-child(6) { grid-column: 2; grid-row: 4; }
-  #screen-home > .card:nth-child(7) { grid-column: 2; grid-row: 5; }
-  #screen-home > .card:nth-child(9) { grid-column: 1 / -1; grid-row: 6; }
+  #screen-home > .card:nth-child(6) { grid-column: 2; grid-row: 3; }
+  #screen-home > .card:nth-child(7) { grid-column: 2; grid-row: 4; }
+  #screen-home > .card:nth-child(8) { grid-column: 2; grid-row: 5; }
   #screen-charts .seg, #screen-charts .pills { max-width: 560px; }
   #charts-wrap, #gpu-charts {
     display: grid;
@@ -310,12 +311,6 @@ nav.bottom .inner {
           <div class="muted" id="val-refresh" style="margin-top:2px">— Hz</div>
         </div>
       </div>
-      <div class="row-between" style="margin-top:8px">
-        <span class="muted">CPU</span><b id="top-cpu" style="font-variant-numeric:tabular-nums">—</b>
-      </div>
-      <div class="row-between" style="margin-top:4px">
-        <span class="muted">RAM</span><b id="top-ram" style="font-variant-numeric:tabular-nums">—</b>
-      </div>
     </div>
     <div class="gauges">
       <div class="gauge-card">
@@ -356,6 +351,22 @@ nav.bottom .inner {
       <div class="mini"><div class="k">Frekans (CPU)</div><div class="v" id="val-cpu-freq">—</div></div>
       <div class="mini"><div class="k">VRAM</div><div class="v" id="home-gpu-vram">—</div></div>
       <div class="mini" id="battery-card" hidden><div class="k">Pil</div><div class="v" id="val-battery">—</div></div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <div class="card-title">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+        En Yoğun
+      </div>
+      <div class="row-between">
+        <span class="muted">CPU</span><b id="top-cpu" style="font-variant-numeric:tabular-nums">—</b>
+      </div>
+      <div class="row-between" style="margin-top:6px">
+        <span class="muted">RAM</span><b id="top-ram" style="font-variant-numeric:tabular-nums">—</b>
+      </div>
+      <div class="row-between" style="margin-top:6px">
+        <span class="muted">GPU</span><b id="top-gpu" style="font-variant-numeric:tabular-nums">—</b>
+      </div>
     </div>
 
     <div class="card" id="gpu-list-card" hidden style="margin-top:10px">
@@ -632,7 +643,7 @@ function clearValues() {
    "val-gpu-temp", "val-gpu-usage", "val-gpu-power", "val-gpu-freq",
    "gd-hotspot", "gd-fan", "val-cpu-freq",
    "val-ram-pct", "val-ram-used", "val-fps-app", "val-fps-value", "val-refresh",
-   "top-cpu", "top-ram",
+   "top-cpu", "top-ram", "top-gpu",
    "val-net-down", "val-net-up", "home-cpu-name", "home-gpu-name",
    "home-ram-total", "home-ram-speed",
    "gd-name", "gd-usage"].forEach((id) => { const el = $(id); if (el) el.textContent = dash; });
@@ -733,6 +744,8 @@ function render(d) {
     ? top.ram.name + " \u00b7 " + (Number(top.ram.value) >= 1024
         ? (Number(top.ram.value) / 1024).toFixed(1) + " GB"
         : Math.round(Number(top.ram.value)) + " MB") : dash;
+  $("top-gpu").textContent = top && top.gpu && top.gpu.name
+    ? top.gpu.name + " \u00b7 " + Number(top.gpu.value).toFixed(0) + "%" : dash;
 
   if (d.battery && d.battery.percent != null) {
     $("battery-card").hidden = false;

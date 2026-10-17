@@ -84,6 +84,7 @@ class ProcessStats:
 class TopProcesses:
     cpu: ProcessStats | None = None
     ram: ProcessStats | None = None
+    gpu: ProcessStats | None = None
 
 
 @dataclass(frozen=True)

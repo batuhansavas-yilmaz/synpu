@@ -228,6 +228,7 @@ def test_top_processes():
     assert d["top"] == {
         "cpu": {"name": "chrome.exe", "value": 12.5},
         "ram": {"name": "chrome.exe", "value": 800.0},
+        "gpu": None,
     }
 
 
