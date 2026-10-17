@@ -70,13 +70,13 @@ def run_ui(url_provider: Callable[[], "str | None"], state_dir: Path,
     root.configure(bg=BG)
     try:
         icon_photo = ImageTk.PhotoImage(_app_icon(64))
-        root.iconphoto(True, icon_photo)
+        root.iconphoto(False, icon_photo)
         root._icon_photo = icon_photo
     except Exception:
         pass
     ico_path = Path(__file__).resolve().parents[3] / "static" / "icon.ico"
     try:
-        root.iconbitmap(default=str(ico_path))
+        root.iconbitmap(str(ico_path))
     except Exception:
         pass
 
