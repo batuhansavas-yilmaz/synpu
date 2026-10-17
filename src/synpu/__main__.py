@@ -1,7 +1,14 @@
+import os
 import socket
 import sys
 import threading
 from pathlib import Path
+
+HEADLESS = sys.stderr is None
+if HEADLESS:
+    sys.stderr = open(os.devnull, "w", encoding="utf-8")
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w", encoding="utf-8")
 
 import uvicorn
 
@@ -38,9 +45,9 @@ def _port_in_use(port: int) -> bool:
 
 
 def _fail(message: str) -> None:
-    if sys.stderr is not None:
+    if not HEADLESS and sys.stderr is not None:
         print(message, file=sys.stderr)
-    else:
+    if HEADLESS:
         try:
             import tkinter.messagebox as messagebox
 
