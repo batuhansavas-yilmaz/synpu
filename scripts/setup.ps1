@@ -60,6 +60,14 @@ if ($LASTEXITCODE -ne 0) {
 
 # 3) PawnIO (LibreHardwareMonitor sensor surucusu)
 $pawnio = Get-Service -Name "PawnIO" -ErrorAction SilentlyContinue
+$pawnioLib = Join-Path $env:ProgramFiles "PawnIO\PawnIOLib.dll"
+if ($pawnio -and -not (Test-Path $pawnioLib)) {
+    Write-Host "PawnIO servisi eksik/bozuk, temizleniyor..."
+    Stop-Service -Name "PawnIO" -Force -ErrorAction SilentlyContinue
+    & sc.exe delete PawnIO | Out-Null
+    Start-Sleep -Seconds 1
+    $pawnio = $null
+}
 if (-not $pawnio) {
     Write-Host "PawnIO surucusu indiriliyor..."
     try {
@@ -77,6 +85,9 @@ if (-not $pawnio) {
         Start-Sleep -Seconds 2
         if (-not (Get-Service -Name "PawnIO" -ErrorAction SilentlyContinue)) {
             throw "PawnIO servisi olusmadi"
+        }
+        if (-not (Test-Path $pawnioLib)) {
+            throw "PawnIO kutuphanesi olusmadi"
         }
     } catch {
         Write-Host "PawnIO kurulamadi: $_" -ForegroundColor Red
