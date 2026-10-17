@@ -1,0 +1,28 @@
+[project]
+name = "synpu"
+version = "0.1.0"
+description = "Synpu — yerel ağda telefondan PC durumunu (CPU/GPU/RAM/FPS) izleyen minik panel"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "psutil",
+    "nvidia-ml-py>=12",
+    "pythonnet",
+    "qrcode[pil]",
+    "pystray",
+    "Pillow",
+]
+
+[dependency-groups]
+dev = ["pytest", "httpx"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/synpu"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
