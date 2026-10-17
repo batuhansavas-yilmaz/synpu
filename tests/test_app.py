@@ -5,7 +5,14 @@ from starlette.websockets import WebSocketDisconnect
 from synpu.server.app import create_app, is_allowed_origin
 
 
+class FakeHistory:
+    def series(self, minutes):
+        return [{"ts": 1.0, "cpu_usage": 10.0}]
+
+
 class FakeCollector:
+    history = FakeHistory()
+
     def snapshot(self):
         return {
             "hostname": "pc",
@@ -35,6 +42,19 @@ def test_snapshot_endpoint_schema(client):
     assert r.status_code == 200
     d = r.json()
     assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps"}
+
+
+def test_history_endpoint(client):
+    r = client.get("/api/history?minutes=5")
+    assert r.status_code == 200
+    d = r.json()
+    assert d["minutes"] == 5
+    assert d["samples"] == [{"ts": 1.0, "cpu_usage": 10.0}]
+
+
+def test_history_minutes_clamped(client):
+    d = client.get("/api/history?minutes=999").json()
+    assert d["minutes"] == 60
 
 
 def test_ws_pushes_snapshot(client):

@@ -25,6 +25,10 @@ def read_gpu(nvml_mod=None) -> GpuStats | None:
             power_w = nvml_mod.nvmlDeviceGetPowerUsage(handle) / 1000.0
         except Exception:
             power_w = None
+        try:
+            freq_mhz = float(nvml_mod.nvmlDeviceGetClockInfo(handle, nvml_mod.NVML_CLOCK_GRAPHICS))
+        except Exception:
+            freq_mhz = None
         return GpuStats(
             name=name,
             usage_pct=float(usage.gpu),
@@ -32,6 +36,7 @@ def read_gpu(nvml_mod=None) -> GpuStats | None:
             vram_used_mb=int(mem.used) // (1024 * 1024),
             vram_total_mb=int(mem.total) // (1024 * 1024),
             power_w=power_w,
+            freq_mhz=freq_mhz,
         )
     except Exception:
         return None

@@ -40,6 +40,13 @@ def create_app(collector, push_interval: float = config.PUSH_INTERVAL_S,
     def snapshot():
         return collector.snapshot()
 
+    @app.get("/api/history")
+    def history(minutes: int = 60):
+        minutes = min(max(minutes, 1), 60)
+        history_buffer = getattr(collector, "history", None)
+        samples = history_buffer.series(minutes) if history_buffer is not None else []
+        return {"minutes": minutes, "samples": samples}
+
     @app.websocket("/ws")
     async def ws_endpoint(websocket: WebSocket):
         if not is_allowed_origin(websocket.headers.get("origin")):

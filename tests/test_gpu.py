@@ -17,6 +17,7 @@ class FakeMemory:
 class FakeNvml:
     NVMLError = FakeNVMLError
     NVML_TEMPERATURE_GPU = 0
+    NVML_CLOCK_GRAPHICS = 0
 
     def __init__(self, fail_init=False, fail_power=False):
         self.fail_init = fail_init
@@ -50,6 +51,9 @@ class FakeNvml:
             raise FakeNVMLError("not supported")
         return 11660
 
+    def nvmlDeviceGetClockInfo(self, handle, clock_type):
+        return 2610
+
 
 def test_read_gpu_returns_fields():
     g = read_gpu(FakeNvml())
@@ -59,6 +63,7 @@ def test_read_gpu_returns_fields():
     assert g.vram_used_mb == 1650
     assert g.vram_total_mb == 12282
     assert round(g.power_w, 2) == 11.66
+    assert g.freq_mhz == 2610.0
 
 
 def test_read_gpu_no_device_returns_none():
