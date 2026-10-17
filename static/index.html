@@ -135,7 +135,7 @@ nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-templa
     <div class="logo-text">Synpu</div>
     <div class="health" id="health" role="button" tabindex="0" title="PC değiştir">
       <span id="status"></span>
-      <span class="health-text" id="health-text">Sağlı: —</span>
+      <span class="health-text" id="health-text">Bağlı: —</span>
     </div>
     <button class="icon-btn" id="gear" type="button" aria-label="Ayarlar">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -408,7 +408,7 @@ function setStatus(state) {
   const el = $("status");
   el.className = state || "";
   const pc = pcs[active];
-  $("health-text").textContent = "Sağlı: " + (pc ? pc.name : dash);
+  $("health-text").textContent = "Bağlı: " + (pc ? pc.name : dash);
   $("health").title = pc ? pc.url : "";
 }
 
