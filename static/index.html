@@ -499,6 +499,14 @@ nav.bottom .inner {
   </div>
 </div>
 
+<div class="modal-backdrop" id="install-modal" hidden>
+  <div class="modal">
+    <div class="card-title" style="margin:0">Ana ekrana ekle</div>
+    <div class="muted" id="install-steps" style="margin-top:10px;line-height:1.7;font-size:12px"></div>
+    <button class="btn accent" id="install-ok" type="button" style="width:100%;margin-top:14px">Anladım</button>
+  </div>
+</div>
+
 <nav class="bottom">
   <div class="inner">
     <button class="nav-btn active" data-screen="home" type="button">
@@ -1118,9 +1126,15 @@ $("install-add").addEventListener("click", async () => {
     $("install-banner").hidden = true;
     return;
   }
-  $("install-sub").textContent = isIOS()
-    ? "Safari'de Paylaş (□↑) → 'Ana Ekrana Ekle' seç"
-    : "Tarayıcı menüsü (⋮) → 'Ana ekrana ekle' seç";
+  $("install-steps").innerHTML = isIOS()
+    ? "1. Safari'de alttaki <b>Paylaş</b> (□↑) düğmesine dokun<br>2. Listeden <b>Ana Ekrana Ekle</b>'yi seç<br>3. <b>Ekle</b>'ye dokun"
+    : "1. Tarayıcı menüsüne (⋮) dokun<br>2. <b>Ana ekrana ekle</b> / <b>Uygulamayı yükle</b>'yi seç<br>3. Onayla";
+  $("install-modal").hidden = false;
+});
+
+$("install-ok").addEventListener("click", () => { $("install-modal").hidden = true; });
+$("install-modal").addEventListener("click", (ev) => {
+  if (ev.target === $("install-modal")) $("install-modal").hidden = true;
 });
 
 setTimeout(showInstallBanner, 1800);
