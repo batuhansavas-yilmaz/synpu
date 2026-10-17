@@ -115,16 +115,8 @@ nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-templa
   align-items: center; gap: 3px; font-size: 10px; font-weight: 600; cursor: pointer; padding: 4px 0; }
 .nav-btn.active { color: #6ea8ff; }
 .nav-btn svg { width: 22px; height: 22px; }
-html { background: #070c18; }
-body {
-  background:
-    radial-gradient(1000px 640px at 6% -8%, rgba(59, 130, 246, 0.32), transparent 62%),
-    radial-gradient(900px 620px at 98% 8%, rgba(168, 85, 247, 0.26), transparent 62%),
-    radial-gradient(1000px 720px at 50% 112%, rgba(34, 211, 238, 0.16), transparent 62%),
-    linear-gradient(165deg, #0a1124 0%, #070c18 48%, #0b1020 100%);
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-}
+html { background: var(--bg); }
+body { background: var(--bg); }
 .card, .gauge-card, .mini, .chart-card, .pc-item, .tab {
   background: rgba(17, 25, 46, 0.42);
   border: 1px solid rgba(255, 255, 255, 0.08);
