@@ -25,7 +25,7 @@ Ayrıca **Grafikler** sekmesi son 1 saatin geçmişini gösterir (1dk/5dk/15dk/1
 
 ## Kurulum
 
-1. `SynpuSetup.exe` dosyasını çalıştır ve UAC onayını ver.
+1. `SynpuSetup.exe` dosyasını çalıştır ve UAC onayını ver (depoda: `dist/SynpuSetup.exe`).
 2. Kurulum, gerekli bileşenleri internetten indirir (birkaç dakika sürebilir).
 3. Masaüstünde **Synpu** simgesi oluşur. Synpu arka planda başlar ve bilgisayar her açıldığında otomatik çalışır — **Görev Yöneticisi → Başlangıç uygulamaları** listesinde "Synpu" olarak görünür ve oradan açılıp kapatılabilir.
 4. Telefonla bağlanmak için masaüstündeki **Synpu** simgesine tıkla; QR penceresi açılır (uygulama zaten çalışıyorsa pencere öne getirilir).
