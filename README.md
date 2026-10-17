@@ -1,20 +1,23 @@
 # Synpu
 
-PC'nin canlı sistem istatistiklerini (CPU/GPU kullanımı ve sıcaklığı, RAM, oyun FPS) telefonundan takip et. Synpu PC'de arka planda çalışır; aynı Wi-Fi ağındaki telefon tarayıcısından `http://<PC-IP>:8787` adresine bağlanırsın. Kurulum ve hesap gerekmez, veri internete gitmez — her şey yerel ağda kalır.
+PC'nin canlı sistem istatistiklerini (CPU/GPU kullanımı ve sıcaklığı, RAM, diskler, ağ, fanlar, oyun FPS) telefonundan takip et. Synpu PC'de arka planda çalışır; aynı Wi-Fi ağındaki telefon tarayıcısından `http://<PC-IP>:8787` adresine bağlanırsın. Kurulum ve hesap gerekmez; veriler yerel ağda kalır.
 
 ## Ne gösterir?
 
 | Kart | Değerler |
 |------|----------|
 | İşlemci | Kullanım %, sıcaklık, frekans, model |
-| Ekran Kartı | Kullanım %, sıcaklık, frekans, VRAM, güç |
+| Ekran Kartı | Kullanım %, sıcaklık + hotspot, fan %, frekans, VRAM, güç; çift GPU'da aktif kart otomatik seçilir |
 | Bellek | Kullanılan / toplam, %, DDR tipi + hız (MT/s) + modül sayısı |
-| Diskler | Her disk için kalan alan (+ sıcaklık); sistem diski Windows simgeli |
-| Ağ | Anlık indirme / yükleme hızı |
-| Fanlar | Fan devirleri (anakart destekliyorsa, best-effort) |
-| Oyun FPS | Ön plandaki uygulamanın anlık FPS değeri |
+| Diskler | Kalan alan, sıcaklık, okuma/yazma hızı, SMART sağlığı + çalışma saati; sistem diski Windows simgeli |
+| Ağ | İndirme / yükleme hızı, gecikme, internet sağlayıcı (ISP) ve Wi-Fi adı |
+| Sistem | Bilgisayar adı, çalışma süresi, anakart, monitör adı + çözünürlük + Hz |
+| Fanlar | Aktif fan devirleri (anakart destekliyorsa, best-effort) |
+| FPS / En Yoğun | Ön plandaki uygulamanın FPS'i; en çok CPU/RAM/GPU kullanan süreçler |
 
-Ayrıca **Grafikler** sekmesi geçmişi gösterir (10dk/1sa/12sa/48sa; CPU/GPU/RAM/Disk; uzun aralıklar dakikalık ortalamalarla). Değerler 0.1 saniyede bir güncellenir (10 Hz). Okunamayan bir değer `—` olarak görünür.
+Ayrıca **Grafikler** sekmesi 10dk/1sa/12sa/48sa aralıklarında CPU (çekirdek bazlı dahil), GPU, RAM, Ağ ve Disk grafikleri gösterir; geçmiş diske yazılır (PC yeniden başlasa da korunur) ve Ayarlar'dan **CSV** indirilebilir. Değerler 0.1 sn'de bir güncellenir. Uyarı eşikleri: CPU/GPU sıcaklık 70°C sarı / 80°C kırmızı; disk doluluk %85/%95; RAM %90/%97. Okunamayan bir değer `—` olarak görünür.
+
+Ayarlar penceresinden **"Başlangıçta çalıştır"** anahtarı, CSV dışa aktarma ve sürüm/güncelleme durumu yönetilir. Tarayıcı sekmesinde canlı `CPU % · GPU %` başlığı görünür.
 
 ## Gereksinimler
 
@@ -38,7 +41,7 @@ Kurulum sırasında internetten indirilenler: [uv](https://astral.sh/uv) (Python
 ## Telefonla bağlanma
 
 1. Kurulum sonrası PC'de **"Synpu — Telefonla Bağlan"** penceresi açılır; QR kodu telefonun kamerasıyla okut.
-2. Tarayıcı otomatik açılır ve panel görünür.
+2. Tarayıcı otomatik açılır ve panel görünür; sayfayı aşağı çekerek yenileyebilirsin.
 3. Sayfayı ana ekrana ekleyebilirsin (Tarayıcı menüsü → "Ana ekrana ekle") — uygulama gibi açılır (manifest + ikonlar hazır).
 
 Pencereyi kapatırsan Synpu çalışmaya devam eder; sağ alt tepsi simgesinden "QR'ı Göster" ile geri açabilirsin.
