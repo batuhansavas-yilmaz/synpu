@@ -9,12 +9,12 @@ PC'nin canlı sistem istatistiklerini (CPU/GPU kullanımı ve sıcaklığı, RAM
 | İşlemci | Kullanım %, sıcaklık, frekans, model |
 | Ekran Kartı | Kullanım %, sıcaklık, frekans, VRAM, güç |
 | Bellek | Kullanılan / toplam, % |
-| Diskler | Her disk için doluluk (+ sıcaklık); sistem diski Windows simgeli |
+| Diskler | Her disk için kalan alan (+ sıcaklık); sistem diski Windows simgeli |
 | Ağ | Anlık indirme / yükleme hızı |
 | Fanlar | Fan devirleri (anakart destekliyorsa, best-effort) |
 | Oyun FPS | Ön plandaki uygulamanın anlık FPS değeri |
 
-Ayrıca **Grafikler** sekmesi son 1 saatin geçmişini gösterir (1dk/5dk/15dk/1sa; CPU/GPU/RAM/Disk). Değerler yarım saniyede bir güncellenir. Okunamayan bir değer `—` olarak görünür.
+Ayrıca **Grafikler** sekmesi son 1 saatin geçmişini gösterir (1dk/5dk/15dk/1sa; CPU/GPU/RAM/Disk). Değerler 0.1 saniyede bir güncellenir (10 Hz). Okunamayan bir değer `—` olarak görünür.
 
 ## Gereksinimler
 
