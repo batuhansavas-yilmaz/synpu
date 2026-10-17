@@ -189,4 +189,5 @@ def test_history_records_samples():
     assert samples[0]["cpu_temp"] == 55.0
     assert samples[0]["gpu_usage"] == 5.0
     assert samples[0]["ram_percent"] == 50.0
+    assert samples[0]["ram_used_mb"] == 100
     assert samples[0]["disk_temp"] == 38.0

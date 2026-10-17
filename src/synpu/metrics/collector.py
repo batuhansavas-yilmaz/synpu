@@ -187,6 +187,7 @@ class MetricsCollector:
             "gpu_freq": gpu.freq_mhz if gpu is not None else None,
             "gpu_power": gpu.power_w if gpu is not None else None,
             "ram_percent": ram.percent if ram is not None else None,
+            "ram_used_mb": ram.used_mb if ram is not None else None,
             "disk_percent": system_disk.percent if system_disk is not None else None,
             "disk_temp": system_disk.temp_c if system_disk is not None else None,
             "net_down": net.down_bps if net is not None else None,
