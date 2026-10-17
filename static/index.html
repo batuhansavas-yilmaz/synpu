@@ -123,7 +123,7 @@ canvas.chart { width: 100%; height: 130px; display: block; touch-action: pan-y; 
   font-size: 13px; font-weight: 700; padding: 10px 12px; cursor: pointer; }
 .btn.accent { background: linear-gradient(90deg, #2563eb, #7c3aed); border: 0; }
 nav.bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; }
-nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr);
+nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(2, 1fr);
   background: rgba(8, 14, 27, .92); backdrop-filter: blur(12px); border-top: 1px solid var(--line);
   padding: 8px 6px 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom) + var(--sab-extra, 0px)); }
 .nav-btn { background: transparent; border: 0; color: var(--muted); display: flex; flex-direction: column;
@@ -145,9 +145,10 @@ nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-templa
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: flex; align-items: flex-start;
   justify-content: center; padding: 70px 16px 16px; }
 .modal-backdrop[hidden] { display: none; }
-.modal { width: min(420px, 100%); padding: 16px; border-radius: 18px;
+.modal { width: min(420px, 100%); padding: 16px; border-radius: 18px; max-height: 82vh; overflow-y: auto;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)), rgba(10, 16, 30, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.50); }
+.modal .card { margin-top: 10px; padding: 14px; }
 .input { width: 100%; margin-top: 10px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16);
   color: var(--text); border-radius: 12px; padding: 10px 12px; font-size: 14px; outline: none; }
 .input:focus { border-color: #4f7cff; }
@@ -257,7 +258,7 @@ nav.bottom .inner {
   #screen-home .bar { height: 10px; }
   #screen-home.active { gap: 14px; }
   nav.bottom { left: 50%; right: auto; bottom: 18px; transform: translateX(-50%); }
-  nav.bottom .inner { max-width: none; width: 540px; border: 1px solid var(--line); border-radius: 18px; padding: 8px 12px; }
+  nav.bottom .inner { max-width: none; width: 420px; border: 1px solid var(--line); border-radius: 18px; padding: 8px 12px; }
 }
 </style>
 </head>
@@ -446,7 +447,23 @@ nav.bottom .inner {
     <div id="gpu-charts" style="margin-top:10px"></div>
   </section>
 
-  <section class="screen" id="screen-settings">
+
+</div>
+
+<div class="install-banner" id="install-banner" hidden>
+  <div class="install-text">Synpu'yu ana ekrana ekle
+    <small id="install-sub">Uygulama gibi tam ekran açılır</small>
+  </div>
+  <button class="install-btn" id="install-add" type="button">Ekle</button>
+  <button class="install-x" id="install-close" type="button" aria-label="Kapat">✕</button>
+</div>
+
+<div class="modal-backdrop" id="settings-modal" hidden>
+  <div class="modal">
+    <div class="row-between" style="margin-bottom:2px">
+      <div class="card-title" style="margin:0">Ayarlar</div>
+      <button class="pc-x" id="settings-close" type="button" aria-label="Kapat">✕</button>
+    </div>
     <div class="card">
       <div class="card-title">PC'ler</div>
       <div class="list" id="pc-list"></div>
@@ -465,15 +482,7 @@ nav.bottom .inner {
         <a href="https://github.com/batuhansavas-yilmaz/synpu" target="_blank" rel="noopener" style="color:#6ea8ff">GitHub</a>
       </div>
     </div>
-  </section>
-</div>
-
-<div class="install-banner" id="install-banner" hidden>
-  <div class="install-text">Synpu'yu ana ekrana ekle
-    <small id="install-sub">Uygulama gibi tam ekran açılır</small>
   </div>
-  <button class="install-btn" id="install-add" type="button">Ekle</button>
-  <button class="install-x" id="install-close" type="button" aria-label="Kapat">✕</button>
 </div>
 
 <div class="modal-backdrop" id="add-modal" hidden>
@@ -505,10 +514,7 @@ nav.bottom .inner {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
       Grafikler
     </button>
-    <button class="nav-btn" data-screen="settings" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.09a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.09a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>
-      Ayarlar
-    </button>
+
   </div>
 </nav>
 
@@ -782,7 +788,7 @@ function tryWs(pc) {
 
 function setScreen(name) {
   screen = name;
-  ["home", "charts", "settings", "gpu"].forEach((s) => {
+  ["home", "charts", "gpu"].forEach((s) => {
     const el = $("screen-" + s);
     if (el) el.classList.toggle("active", s === name);
   });
@@ -794,7 +800,6 @@ function setScreen(name) {
   } else {
     stopCharts();
   }
-  if (name === "settings") refreshVersion();
 }
 
 function startCharts() {
@@ -1126,8 +1131,8 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
   btn.addEventListener("click", () => setScreen(btn.dataset.screen));
 });
 
-$("gear").addEventListener("click", () => setScreen("settings"));
-$("health").addEventListener("click", () => setScreen("settings"));
+$("gear").addEventListener("click", openSettingsModal);
+$("health").addEventListener("click", openSettingsModal);
 $("gpu-back").addEventListener("click", () => setScreen("home"));
 
 document.querySelectorAll("#chart-tabs .seg-btn").forEach((btn) => {
@@ -1179,6 +1184,24 @@ $("add-cancel").addEventListener("click", closeAddModal);
 $("add-confirm").addEventListener("click", () => addPcFromUrl($("add-url").value));
 $("add-url").addEventListener("keydown", (ev) => { if (ev.key === "Enter") addPcFromUrl($("add-url").value); });
 $("add-modal").addEventListener("click", (ev) => { if (ev.target === $("add-modal")) closeAddModal(); });
+
+function openSettingsModal() {
+  renderSettings();
+  refreshVersion();
+  $("settings-modal").hidden = false;
+}
+
+function closeSettingsModal() {
+  $("settings-modal").hidden = true;
+}
+
+$("settings-close").addEventListener("click", closeSettingsModal);
+$("settings-modal").addEventListener("click", (ev) => {
+  if (ev.target === $("settings-modal")) closeSettingsModal();
+});
+document.addEventListener("keydown", (ev) => {
+  if (ev.key === "Escape") closeSettingsModal();
+});
 
 renderSettings();
 activate(active);
