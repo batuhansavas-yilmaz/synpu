@@ -106,10 +106,25 @@ def run_ui(url_provider: Callable[[], "str | None"], state_dir: Path,
             root.clipboard_clear()
             root.clipboard_append(text)
 
-    tk.Button(root, text="Adresi Kopyala", command=copy_url, bg=ACCENT, fg="white",
+    def open_browser():
+        url = state["url"] or f"http://127.0.0.1:{config.PORT}"
+        try:
+            import webbrowser
+
+            webbrowser.open(url)
+        except Exception:
+            pass
+
+    buttons = tk.Frame(root, bg=BG)
+    buttons.pack(pady=(8, 14))
+    tk.Button(buttons, text="Tarayıcıda Aç", command=open_browser, bg=ACCENT, fg="white",
               activebackground="#1d4ed8", activeforeground="white", relief="flat",
-              bd=0, padx=16, pady=7, font=("Segoe UI", 10, "bold"),
-              cursor="hand2").pack(pady=(8, 14))
+              bd=0, padx=14, pady=7, font=("Segoe UI", 10, "bold"),
+              cursor="hand2").pack(side="left", padx=(0, 8))
+    tk.Button(buttons, text="Adresi Kopyala", command=copy_url, bg="#182543", fg=TEXT,
+              activebackground="#223355", activeforeground=TEXT, relief="flat",
+              bd=0, padx=14, pady=7, font=("Segoe UI", 10),
+              cursor="hand2").pack(side="left")
 
     tk.Label(root, text="Diğer adresler", fg=MUTED, bg=BG,
              font=("Segoe UI", 8)).pack()
