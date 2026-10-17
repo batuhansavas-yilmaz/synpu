@@ -306,7 +306,6 @@ nav.bottom .inner {
         </div>
         <div style="text-align:right">
           <div style="font-size:28px;font-weight:800;font-variant-numeric:tabular-nums" id="val-fps-value">—</div>
-          <div class="muted" id="val-refresh" style="margin-top:2px">— Hz</div>
         </div>
       </div>
     </div>
@@ -376,6 +375,12 @@ nav.bottom .inner {
         <span class="muted">Bilgisayar</span><b id="home-sys-host">—</b>
       </div>
       <div class="row-between" style="margin-top:6px">
+        <span class="muted">Monitör</span><b id="home-sys-monitor">—</b>
+      </div>
+      <div class="row-between" style="margin-top:6px">
+        <span class="muted">Ekran</span><b id="home-sys-screen">—</b>
+      </div>
+      <div class="row-between" style="margin-top:6px">
         <span class="muted">Çalışma süresi</span><b id="home-sys-uptime">—</b>
       </div>
     </div>
@@ -419,9 +424,12 @@ nav.bottom .inner {
     </div>
 
     <div class="card">
-      <div class="card-title">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4"/></svg>
-        Ağ
+      <div class="row-between" style="margin-bottom:10px">
+        <div class="card-title" style="margin:0">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4"/></svg>
+          Ağ
+        </div>
+        <span class="muted" id="net-meta" style="font-size:11px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:62%">—</span>
       </div>
       <div class="row-between">
         <span class="muted">İndirme</span><b id="val-net-down" style="font-variant-numeric:tabular-nums">—</b>
@@ -658,9 +666,10 @@ function clearValues() {
   ["val-cpu-usage", "val-cpu-temp", "home-gpu-temp", "home-gpu-vram",
    "val-gpu-temp", "val-gpu-usage", "val-gpu-power", "val-gpu-freq",
    "gd-hotspot", "gd-fan", "val-cpu-freq",
-   "val-ram-pct", "val-ram-used", "val-fps-app", "val-fps-value", "val-refresh",
+   "val-ram-pct", "val-ram-used", "val-fps-app", "val-fps-value",
+   "home-sys-monitor", "home-sys-screen",
    "top-cpu", "top-ram", "top-gpu", "home-sys-host", "home-sys-uptime",
-   "val-net-down", "val-net-up", "home-cpu-name", "home-gpu-name",
+   "val-net-down", "val-net-up", "net-meta", "home-cpu-name", "home-gpu-name",
    "home-ram-total", "home-ram-speed",
    "gd-name", "gd-usage"].forEach((id) => { const el = $(id); if (el) el.textContent = dash; });
   setRing("ring-cpu", null); setRing("ring-gpu", null); setRing("ring-gpu-detail", null);
@@ -751,8 +760,12 @@ function render(d) {
 
   $("val-fps-app").textContent = fps.app || dash;
   $("val-fps-value").textContent = fps.value != null ? String(Math.round(fps.value)) : dash;
-  $("val-refresh").textContent = d.display && d.display.refresh_hz
-    ? Math.round(Number(d.display.refresh_hz)) + " Hz" : dash;
+  const display = d.display;
+  $("home-sys-monitor").textContent = display && display.name ? display.name : dash;
+  const screenParts = [];
+  if (display && display.width && display.height) screenParts.push(display.width + "\u00d7" + display.height);
+  if (display && display.refresh_hz) screenParts.push(Math.round(Number(display.refresh_hz)) + " Hz");
+  $("home-sys-screen").textContent = screenParts.length ? screenParts.join(" \u00b7 ") : dash;
   const top = d.top;
   $("top-cpu").textContent = top && top.cpu && top.cpu.name
     ? top.cpu.name + " \u00b7 " + Number(top.cpu.value).toFixed(0) + "%" : dash;

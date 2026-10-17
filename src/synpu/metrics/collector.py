@@ -57,7 +57,8 @@ class MetricsCollector:
                  ram_info_source=None, history_path=None,
                  battery_source=None, uptime_source=None,
                  disk_io_source=None, disk_map_source=None, display_source=None,
-                 motherboard_source=None, top_source=None):
+                 motherboard_source=None, top_source=None,
+                 wifi_source=None, isp_source=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -77,6 +78,8 @@ class MetricsCollector:
         self._display_source = display_source
         self._motherboard_source = motherboard_source
         self._top_source = top_source
+        self._wifi_source = wifi_source
+        self._isp_source = isp_source
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
@@ -204,9 +207,7 @@ class MetricsCollector:
         display = None
         if self._display_source is not None:
             try:
-                refresh_hz = self._display_source()
-                if refresh_hz is not None:
-                    display = DisplayStats(refresh_hz=float(refresh_hz))
+                display = self._display_source()
             except Exception:
                 display = None
         motherboard = None
@@ -221,6 +222,18 @@ class MetricsCollector:
                 top = self._top_source()
             except Exception:
                 top = None
+        wifi = None
+        if self._wifi_source is not None:
+            try:
+                wifi = self._wifi_source()
+            except Exception:
+                wifi = None
+        isp = None
+        if self._isp_source is not None:
+            try:
+                isp = self._isp_source()
+            except Exception:
+                isp = None
 
         snapshot = Snapshot(
             hostname=self._hostname,
@@ -238,6 +251,8 @@ class MetricsCollector:
             display=display,
             motherboard=motherboard,
             top=top,
+            isp=isp,
+            wifi=wifi,
         )
         self._cached = snapshot.to_dict()
         self._cached_at = now

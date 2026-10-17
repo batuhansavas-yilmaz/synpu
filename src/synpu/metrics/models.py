@@ -66,6 +66,9 @@ class BatteryStats:
 @dataclass(frozen=True)
 class DisplayStats:
     refresh_hz: float | None = None
+    width: int | None = None
+    height: int | None = None
+    name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -110,6 +113,8 @@ class Snapshot:
     display: DisplayStats | None = None
     motherboard: MotherboardStats | None = None
     top: TopProcesses | None = None
+    isp: str | None = None
+    wifi: str | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)

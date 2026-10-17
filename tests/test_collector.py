@@ -1,7 +1,7 @@
 from synpu.metrics.collector import MetricsCollector, collect_gpu_candidates, pick_active_gpu
 from synpu.metrics.hardware_monitor import HardwareReading
 from synpu.metrics.models import (
-    BatteryStats, CpuStats, FpsStats, GpuStats, MotherboardStats, NetStats,
+    BatteryStats, CpuStats, DisplayStats, FpsStats, GpuStats, MotherboardStats, NetStats,
     ProcessStats, RamStats, StorageStats, TopProcesses,
 )
 
@@ -24,7 +24,7 @@ class FakeNet:
 
 def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None, gpus=(), ram_info_source=None,
                battery_source=None, uptime_source=None, disk_io_source=None, disk_map_source=None, display_source=None,
-               motherboard_source=None, top_source=None):
+               motherboard_source=None, top_source=None, wifi_source=None, isp_source=None):
     clock = clock or FakeClock()
     counters = counters if counters is not None else {}
 
@@ -82,6 +82,8 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
         display_source=display_source,
         motherboard_source=motherboard_source,
         top_source=top_source,
+        wifi_source=wifi_source,
+        isp_source=isp_source,
     )
     return col, counters, clock
 
@@ -90,7 +92,7 @@ def test_snapshot_schema_and_hostname():
     col, _, _ = _collector()
     d = col.snapshot()
     assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps", "disks", "net", "fans", "gpus",
-                      "battery", "uptime_s", "display", "motherboard", "top"}
+                      "battery", "uptime_s", "display", "motherboard", "top", "isp", "wifi"}
     assert d["cpu"]["cores"] == (50.0, 60.0)
     assert d["hostname"] == "pc"
     assert d["cpu"]["usage_pct"] == 10.0
@@ -205,12 +207,19 @@ def test_battery_uptime_display():
     col, _, _ = _collector(
         battery_source=lambda: BatteryStats(percent=77.0, plugged=True),
         uptime_source=lambda: 3661,
-        display_source=lambda: 144.0,
+        display_source=lambda: DisplayStats(refresh_hz=144.0, width=2560, height=1440, name="Test Monitor"),
     )
     d = col.snapshot()
     assert d["battery"] == {"percent": 77.0, "plugged": True}
     assert d["uptime_s"] == 3661
-    assert d["display"] == {"refresh_hz": 144.0}
+    assert d["display"] == {"refresh_hz": 144.0, "width": 2560, "height": 1440, "name": "Test Monitor"}
+
+
+def test_network_meta():
+    col, _, _ = _collector(wifi_source=lambda: "EvWiFi", isp_source=lambda: "Turk Telekom")
+    d = col.snapshot()
+    assert d["isp"] == "Turk Telekom"
+    assert d["wifi"] == "EvWiFi"
 
 
 def test_motherboard():
