@@ -60,9 +60,10 @@ header.top { display: flex; align-items: center; gap: 10px; padding: 2px 0 12px;
 .gauge-label { margin-top: 5px; font-size: 12px; font-weight: 700; letter-spacing: .6px; }
 .gauge-sub { font-size: 10px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.mini { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px; }
-.mini .k { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
-.mini .v { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mini { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mini .k { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.mini .v { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bar { height: 8px; border-radius: 999px; background: #1a2540; overflow: hidden; }
 .bar > i { display: block; height: 100%; border-radius: 999px; transition: width .25s ease; }
 .grad-blue { background: linear-gradient(90deg, #2563eb, #22d3ee); }
