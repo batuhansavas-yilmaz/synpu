@@ -6,7 +6,7 @@ import urllib.request
 from importlib import metadata
 
 REPO = "batuhansavas-yilmaz/synpu"
-CHECK_INTERVAL_S = 6 * 3600
+CHECK_INTERVAL_S = 24 * 3600
 
 
 def local_version() -> str:
