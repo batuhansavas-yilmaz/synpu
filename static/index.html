@@ -544,7 +544,7 @@ function renderDisks(containerId, disks) {
   el.innerHTML = disks.map((d) => {
     const name = (d.is_system ? winIcon() : "") + "Disk (" + escapeHtml(d.label) + ")";
     const used = d.used_mb != null && d.total_mb != null
-      ? Math.round((d.total_mb - d.used_mb) / 1024) + " GB boş / " + Math.round(d.total_mb / 1024) + " GB" : dash;
+      ? ((d.total_mb - d.used_mb) / 1024).toFixed(2) + " GB boş / " + Math.round(d.total_mb / 1024) + " GB" : dash;
     const temp = d.temp_c != null ? Number(d.temp_c).toFixed(0) + "\u00b0C" : "";
     return '<div class="disk-row">' +
       '<div class="row-between"><span class="disk-label">' + name + '</span>' +
