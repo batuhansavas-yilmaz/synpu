@@ -36,7 +36,7 @@ class Snapshot:
     timestamp: float
     cpu: CpuStats
     gpu: GpuStats | None
-    ram: RamStats
+    ram: RamStats | None
     fps: FpsStats
 
     def to_dict(self) -> dict:
