@@ -34,7 +34,12 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   min-height: 100vh;
 }
-.app { max-width: 520px; margin: 0 auto; padding: 14px 14px 92px; }
+.app {
+  max-width: 520px; margin: 0 auto;
+  padding: 14px 14px 92px;
+  padding-top: calc(14px + env(safe-area-inset-top));
+  padding-bottom: calc(92px + env(safe-area-inset-bottom));
+}
 header.top { display: flex; align-items: center; gap: 10px; padding: 2px 0 12px; }
 .logo-mark { width: 30px; height: 30px; flex: 0 0 auto; }
 .logo-text { font-size: 19px; font-weight: 800; letter-spacing: .4px; }
@@ -112,7 +117,8 @@ canvas.chart { width: 100%; height: 110px; display: block; }
 .btn.accent { background: linear-gradient(90deg, #2563eb, #7c3aed); border: 0; }
 nav.bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; }
 nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr);
-  background: rgba(8, 14, 27, .92); backdrop-filter: blur(12px); border-top: 1px solid var(--line); padding: 8px 6px 10px; }
+  background: rgba(8, 14, 27, .92); backdrop-filter: blur(12px); border-top: 1px solid var(--line);
+  padding: 8px 6px 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
 .nav-btn { background: transparent; border: 0; color: var(--muted); display: flex; flex-direction: column;
   align-items: center; gap: 3px; font-size: 10px; font-weight: 600; cursor: pointer; padding: 4px 0; }
 .nav-btn.active { color: #6ea8ff; }
