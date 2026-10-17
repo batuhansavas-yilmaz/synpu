@@ -19,7 +19,7 @@ class FakeNet:
         return NetStats(down_bps=1_000_000.0, up_bps=200_000.0)
 
 
-def _collector(clock=None, counters=None, gpu_source=None, ram_source=None):
+def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None):
     clock = clock or FakeClock()
     counters = counters if counters is not None else {}
 
@@ -65,6 +65,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None):
         cpu, gpu, ram, fps, hw,
         hostname="pc", ttl=1.0, clock=clock,
         storage_source=storage, net_meter=FakeNet(),
+        disk_temp_source=disk_temp_source,
     )
     return col, counters, clock
 
@@ -124,6 +125,13 @@ def test_ram_failure_yields_null():
     d = col.snapshot()
     assert d["ram"] is None
     assert d["cpu"]["usage_pct"] == 10.0
+
+
+def test_disk_temp_smart_fallback():
+    col, _, _ = _collector(disk_temp_source=lambda: {"D:": 33.0})
+    d = col.snapshot()
+    assert d["disks"][0]["temp_c"] == 38.0
+    assert d["disks"][1]["temp_c"] == 33.0
 
 
 def test_history_records_samples():

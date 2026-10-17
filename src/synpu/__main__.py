@@ -21,6 +21,7 @@ from synpu.metrics.gpu import read_gpu
 from synpu.metrics.hardware_monitor import CpuTempReader
 from synpu.metrics.net import NetSpeedMeter
 from synpu.metrics.ram import read_ram
+from synpu.metrics.smart import SmartTempReader
 from synpu.metrics.storage import read_disks
 from synpu.net.addresses import primary_ip
 from synpu.server.app import create_app
@@ -92,6 +93,7 @@ def main() -> None:
         hw_reader=temp_reader.read,
         storage_source=read_disks,
         net_meter=NetSpeedMeter(),
+        disk_temp_source=SmartTempReader().read,
         ttl=config.PUSH_INTERVAL_S,
     )
 

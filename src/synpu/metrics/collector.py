@@ -11,7 +11,7 @@ from synpu.metrics.models import CpuStats, FanStat, FpsStats, Snapshot
 class MetricsCollector:
     def __init__(self, cpu_source, gpu_source, ram_source, fps_source, hw_reader,
                  hostname=None, ttl=1.0, clock=time.monotonic,
-                 storage_source=None, net_meter=None):
+                 storage_source=None, net_meter=None, disk_temp_source=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -22,6 +22,7 @@ class MetricsCollector:
         self._clock = clock
         self._storage_source = storage_source
         self._net_meter = net_meter
+        self._disk_temp_source = disk_temp_source
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
@@ -73,6 +74,17 @@ class MetricsCollector:
                     storage = [replace(disk, temp_c=temp) for disk, temp in zip(storage, temps)]
                 else:
                     storage[0] = replace(storage[0], temp_c=temps[0])
+            if storage and self._disk_temp_source is not None:
+                try:
+                    smart_temps = self._disk_temp_source() or {}
+                except Exception:
+                    smart_temps = {}
+                if smart_temps:
+                    storage = [
+                        replace(disk, temp_c=smart_temps[disk.label])
+                        if disk.temp_c is None and disk.label in smart_temps else disk
+                        for disk in storage
+                    ]
 
         net = None
         if self._net_meter is not None:
