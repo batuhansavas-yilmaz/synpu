@@ -51,7 +51,8 @@ def pick_active_gpu(primary: GpuStats | None, extras: tuple[GpuStats, ...]) -> G
 class MetricsCollector:
     def __init__(self, cpu_source, gpu_source, ram_source, fps_source, hw_reader,
                  hostname=None, ttl=1.0, clock=time.monotonic,
-                 storage_source=None, net_meter=None, disk_temp_source=None):
+                 storage_source=None, net_meter=None, disk_temp_source=None,
+                 history_path=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -66,7 +67,7 @@ class MetricsCollector:
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
-        self.history = HistoryBuffer()
+        self.history = HistoryBuffer(path=history_path)
 
     def snapshot(self) -> dict:
         with self._lock:

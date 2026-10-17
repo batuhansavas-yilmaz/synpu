@@ -1,4 +1,33 @@
+import time
+
 from synpu.metrics.history import HistoryBuffer
+
+
+def test_history_persists_across_instances(tmp_path):
+    path = tmp_path / "history.json"
+    h = HistoryBuffer(interval=0.0, path=path, save_interval=0.0)
+    now = time.time()
+    for i in range(5):
+        h.record(now + i, {"ts": now + i, "v": float(i)})
+    h.flush()
+    assert path.exists()
+    restored = HistoryBuffer(interval=0.0, path=path)
+    series = restored.series(60)
+    assert [sample["v"] for sample in series] == [0.0, 1.0, 2.0, 3.0, 4.0]
+
+
+def test_minute_aggregate_persists(tmp_path):
+    path = tmp_path / "history.json"
+    h = HistoryBuffer(interval=0.0, path=path, save_interval=0.0)
+    now = time.time()
+    h.record(now, {"ts": now, "v": 0.0})
+    h.record(now + 61, {"ts": now + 61, "v": 2.0})
+    h.flush()
+    restored = HistoryBuffer(interval=0.0, path=path)
+    series = restored.series(120)
+    assert len(series) == 1
+    assert series[0]["v"] == 1.0
+
 
 
 def test_record_respects_interval():

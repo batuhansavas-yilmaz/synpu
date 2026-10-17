@@ -95,6 +95,7 @@ def main() -> None:
         storage_source=read_disks,
         net_meter=NetSpeedMeter(),
         disk_temp_source=SmartTempReader().read,
+        history_path=STATE_DIR / "history.json",
         ttl=config.PUSH_INTERVAL_S,
     )
 
@@ -121,6 +122,10 @@ def main() -> None:
     try:
         run_ui(_url_provider, STATE_DIR, show_event=show_event)
     finally:
+        try:
+            collector.history.flush()
+        except Exception:
+            pass
         sampler.stop()
 
 

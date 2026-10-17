@@ -1,9 +1,14 @@
+import json
+import os
 import threading
+import time
 from collections import deque
+from pathlib import Path
 
 
 class HistoryBuffer:
-    def __init__(self, max_seconds: int = 3600, interval: float = 1.0, minute_max: int = 2880):
+    def __init__(self, max_seconds: int = 3600, interval: float = 1.0, minute_max: int = 2880,
+                 path: Path | None = None, save_interval: float = 20.0):
         self._interval = interval
         self._raw: deque[dict] = deque(maxlen=max_seconds)
         self._minute: deque[dict] = deque(maxlen=minute_max)
@@ -12,7 +17,57 @@ class HistoryBuffer:
         self._sums: dict[str, float] = {}
         self._counts: dict[str, int] = {}
         self._last_sample_ts: float | None = None
+        self._path = Path(path) if path is not None else None
+        self._save_interval = save_interval
+        self._last_save = 0.0
         self._lock = threading.Lock()
+        self._load()
+
+    def _load(self) -> None:
+        if self._path is None:
+            return
+        try:
+            data = json.loads(self._path.read_text(encoding="utf-8"))
+        except Exception:
+            return
+        raw = data.get("raw") or []
+        minute = data.get("minute") or []
+        for sample in raw[-self._raw.maxlen:]:
+            if isinstance(sample, dict) and "ts" in sample:
+                self._raw.append(sample)
+        for sample in minute[-self._minute.maxlen:]:
+            if isinstance(sample, dict) and "ts" in sample:
+                self._minute.append(sample)
+        self._prune(time.time())
+
+    def _prune(self, now_ts: float) -> None:
+        raw_cutoff = now_ts - (self._raw.maxlen or 3600)
+        minute_cutoff = now_ts - (self._minute.maxlen or 2880) * 60
+        while self._raw and float(self._raw[0].get("ts", 0)) < raw_cutoff:
+            self._raw.popleft()
+        while self._minute and float(self._minute[0].get("ts", 0)) < minute_cutoff:
+            self._minute.popleft()
+
+    def _save_locked(self) -> None:
+        if self._path is None:
+            return
+        try:
+            self._prune(time.time())
+            payload = {
+                "saved_at": time.time(),
+                "raw": list(self._raw),
+                "minute": list(self._minute),
+            }
+            tmp = self._path.with_suffix(".tmp")
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            tmp.write_text(json.dumps(payload), encoding="utf-8")
+            os.replace(tmp, self._path)
+        except Exception:
+            pass
+
+    def flush(self) -> None:
+        with self._lock:
+            self._save_locked()
 
     def record(self, now: float, sample: dict) -> None:
         with self._lock:
@@ -40,6 +95,10 @@ class HistoryBuffer:
                 self._window_start = now
                 self._sums = {}
                 self._counts = {}
+            monotonic_now = time.monotonic()
+            if self._path is not None and monotonic_now - self._last_save >= self._save_interval:
+                self._last_save = monotonic_now
+                self._save_locked()
 
     def series(self, minutes: int, max_points: int = 180) -> list[dict]:
         with self._lock:
