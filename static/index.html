@@ -115,6 +115,43 @@ nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-templa
   align-items: center; gap: 3px; font-size: 10px; font-weight: 600; cursor: pointer; padding: 4px 0; }
 .nav-btn.active { color: #6ea8ff; }
 .nav-btn svg { width: 22px; height: 22px; }
+@media (min-width: 900px) {
+  .app { max-width: 1100px; padding: 20px 20px 120px; }
+  #screen-home.active {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "gauges fps"
+      "gauges ram"
+      "minis disks"
+      "minis net";
+    gap: 12px;
+  }
+  #screen-home > .card { margin: 0 !important; }
+  #screen-home > .gauges { grid-area: gauges; align-content: start; }
+  #screen-home > .mini-grid { grid-area: minis; align-content: start; }
+  #screen-home > .card:nth-child(1) { grid-area: fps; }
+  #screen-home > .card:nth-child(4) { grid-area: ram; }
+  #screen-home > .card:nth-child(5) { grid-area: disks; }
+  #screen-home > .card:nth-child(6) { grid-area: net; }
+  #screen-charts .seg, #screen-charts .pills { max-width: 560px; }
+  #screen-charts .charts-wrap, #gpu-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  #screen-charts .chart-card, #gpu-charts .chart-card { margin-bottom: 0; }
+  #screen-gpu.active { max-width: 780px; margin: 0 auto; }
+  #screen-system.active, #screen-settings.active {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  #screen-system > .card, #screen-settings > .card { margin: 0 !important; }
+  nav.bottom { left: 50%; right: auto; bottom: 18px; transform: translateX(-50%); }
+  nav.bottom .inner { max-width: none; width: 540px; border: 1px solid var(--line); border-radius: 18px; padding: 8px 12px; }
+}
 </style>
 </head>
 <body>
