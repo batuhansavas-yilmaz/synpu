@@ -882,7 +882,9 @@ function render(d) {
     : '<div class="muted">' + dash + '</div>';
 
   const motherboard = d.motherboard || {};
-  const moboParts = [motherboard.vendor, motherboard.model].filter(Boolean);
+  let moboVendor = motherboard.vendor || "";
+  if (/^micro-star/i.test(moboVendor)) moboVendor = "MSI";
+  const moboParts = [moboVendor, motherboard.model].filter(Boolean);
   $("home-mobo-val").textContent = moboParts.length ? moboParts.join(" ") : dash;
 
   applyWarn("val-cpu-temp", "warn-cpu-temp", cpu.temp_c, 70, 80);
