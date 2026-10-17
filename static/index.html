@@ -220,12 +220,12 @@ nav.bottom .inner {
   #screen-home > .card:nth-child(6) { grid-area: disks; }
   #screen-home > .card:nth-child(7) { grid-area: net; }
   #screen-charts .seg, #screen-charts .pills { max-width: 560px; }
-  #screen-charts .charts-wrap, #gpu-charts {
+  #charts-wrap, #gpu-charts {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 22px;
   }
-  #screen-charts .chart-card, #gpu-charts .chart-card { margin-bottom: 0; }
+  #charts-wrap .chart-card, #gpu-charts .chart-card { margin-bottom: 0; }
   #screen-gpu.active { max-width: 780px; margin: 0 auto; }
   #screen-system.active, #screen-settings.active {
     display: grid;
@@ -1194,6 +1194,7 @@ function isIOS() {
 
 function showInstallBanner() {
   if (standalone) return;
+  if (window.innerWidth >= 900) return;
   let dismissed = 0;
   try { dismissed = Number(localStorage.getItem(INSTALL_KEY)) || 0; } catch (e) {}
   if (dismissed && Date.now() - dismissed < 7 * 86400000) return;
