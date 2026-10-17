@@ -115,6 +115,7 @@ class Snapshot:
     top: TopProcesses | None = None
     isp: str | None = None
     wifi: str | None = None
+    ping_ms: int | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)

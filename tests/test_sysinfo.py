@@ -1,7 +1,7 @@
 from synpu.metrics.battery import read_battery
 from synpu.metrics.display import parse_controllers, parse_monitor_name, parse_refresh_rate
 from synpu.metrics.motherboard import parse_motherboard
-from synpu.metrics.network_meta import parse_isp_org, parse_wifi_ssid
+from synpu.metrics.network_meta import parse_isp_org, parse_ping_ms, parse_wifi_ssid
 
 
 class FakeBattery:
@@ -70,3 +70,9 @@ def test_parse_isp_org():
     assert parse_isp_org({"org": "AS9121 Turk Telekom"}) == "Turk Telekom"
     assert parse_isp_org({"org": "Turk Telekom"}) == "Turk Telekom"
     assert parse_isp_org({}) is None
+
+
+def test_parse_ping_ms():
+    assert parse_ping_ms("23") == 23
+    assert parse_ping_ms("-1") is None
+    assert parse_ping_ms("bad") is None

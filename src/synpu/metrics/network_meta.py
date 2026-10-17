@@ -8,6 +8,12 @@ from pathlib import Path
 
 WIFI_COMMAND = ["netsh", "wlan", "show", "interfaces"]
 ISP_URL = "https://ipinfo.io/json"
+PING_HOST = "8.8.8.8"
+PING_COMMAND = (
+    "$p = New-Object System.Net.NetworkInformation.Ping; "
+    "$r = $p.Send('8.8.8.8', 1000); "
+    "if ($r.Status -eq 'Success') { $r.RoundtripTime } else { -1 }"
+)
 
 
 def parse_wifi_ssid(text: str) -> str | None:
@@ -30,6 +36,46 @@ def parse_isp_org(payload) -> str | None:
         return None
     cleaned = re.sub(r"^AS\d+\s+", "", org).strip()
     return cleaned or None
+
+
+def parse_ping_ms(text) -> int | None:
+    try:
+        value = int(str(text).strip())
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+class LatencyReader:
+    def __init__(self, interval: float = 10.0):
+        self._interval = interval
+        self._value: int | None = None
+        self._lock = threading.Lock()
+        threading.Thread(target=self._loop, daemon=True).start()
+
+    def _measure(self) -> None:
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", PING_COMMAND],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            value = parse_ping_ms(result.stdout) if result.returncode == 0 else None
+            with self._lock:
+                self._value = value
+        except Exception:
+            pass
+
+    def _loop(self) -> None:
+        while True:
+            self._measure()
+            time.sleep(self._interval)
+
+    def read(self) -> int | None:
+        with self._lock:
+            return self._value
 
 
 class WifiReader:

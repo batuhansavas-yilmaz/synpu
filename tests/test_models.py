@@ -24,4 +24,5 @@ def test_snapshot_to_dict_nullable_gpu_and_fps():
                  "motherboard": None,
                  "top": None,
                  "isp": None,
-                 "wifi": None}
+                 "wifi": None,
+                 "ping_ms": None}

@@ -58,7 +58,7 @@ class MetricsCollector:
                  battery_source=None, uptime_source=None,
                  disk_io_source=None, disk_map_source=None, display_source=None,
                  motherboard_source=None, top_source=None,
-                 wifi_source=None, isp_source=None):
+                 wifi_source=None, isp_source=None, ping_source=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -80,6 +80,7 @@ class MetricsCollector:
         self._top_source = top_source
         self._wifi_source = wifi_source
         self._isp_source = isp_source
+        self._ping_source = ping_source
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
@@ -234,6 +235,12 @@ class MetricsCollector:
                 isp = self._isp_source()
             except Exception:
                 isp = None
+        ping_ms = None
+        if self._ping_source is not None:
+            try:
+                ping_ms = self._ping_source()
+            except Exception:
+                ping_ms = None
 
         snapshot = Snapshot(
             hostname=self._hostname,
@@ -253,6 +260,7 @@ class MetricsCollector:
             top=top,
             isp=isp,
             wifi=wifi,
+            ping_ms=ping_ms,
         )
         self._cached = snapshot.to_dict()
         self._cached_at = now

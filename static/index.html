@@ -437,6 +437,9 @@ nav.bottom .inner {
       <div class="row-between" style="margin-top:6px">
         <span class="muted">Yükleme</span><b id="val-net-up" style="font-variant-numeric:tabular-nums">—</b>
       </div>
+      <div class="row-between" style="margin-top:6px">
+        <span class="muted">Gecikme</span><b id="val-ping" style="font-variant-numeric:tabular-nums">—</b>
+      </div>
     </div>
 
     <div class="card">
@@ -539,6 +542,7 @@ nav.bottom .inner {
     <div class="card">
       <div class="card-title">Yenileme</div>
       <div class="muted">Canlı akış: 0.1 sn (WebSocket). Bağlantı koparsa 1 sn yoklama.</div>
+      <button class="btn" id="export-csv" type="button" style="width:100%;margin-top:10px">Grafik verilerini indir (CSV)</button>
     </div>
     <div class="card">
       <div class="card-title">Hakkında</div>
@@ -670,7 +674,7 @@ function clearValues() {
    "val-ram-pct", "val-ram-used", "val-fps-app", "val-fps-value",
    "home-sys-monitor", "home-sys-screen",
    "top-cpu", "top-ram", "top-gpu", "home-sys-host", "home-sys-uptime",
-   "val-net-down", "val-net-up", "net-meta", "home-cpu-name", "home-gpu-name",
+   "val-net-down", "val-net-up", "val-ping", "net-meta", "home-cpu-name", "home-gpu-name",
    "home-ram-total", "home-ram-speed",
    "gd-name", "gd-usage"].forEach((id) => { const el = $(id); if (el) el.textContent = dash; });
   setRing("ring-cpu", null); setRing("ring-gpu", null); setRing("ring-gpu-detail", null);
@@ -1443,6 +1447,37 @@ $("settings-modal").addEventListener("click", (ev) => {
 document.addEventListener("keydown", (ev) => {
   if (ev.key === "Escape") closeSettingsModal();
 });
+
+async function exportHistoryCsv() {
+  const pc = pcs[active];
+  if (!pc) return;
+  try {
+    const res = await fetch(pc.url + "/api/history?minutes=60", { cache: "no-store" });
+    const data = await res.json();
+    const samples = data.samples || [];
+    if (!samples.length) return;
+    const keys = Array.from(new Set(samples.flatMap((sample) => Object.keys(sample))));
+    const order = ["ts"].concat(keys.filter((key) => key !== "ts").sort());
+    const lines = [order.join(",")];
+    samples.forEach((sample) => {
+      lines.push(order.map((key) => {
+        const value = sample[key];
+        return value === null || value === undefined ? "" : String(value);
+      }).join(","));
+    });
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "synpu-history.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (e) {}
+}
+
+$("export-csv").addEventListener("click", exportHistoryCsv);
 
 renderSettings();
 activate(active);

@@ -24,7 +24,7 @@ class FakeNet:
 
 def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None, gpus=(), ram_info_source=None,
                battery_source=None, uptime_source=None, disk_io_source=None, disk_map_source=None, display_source=None,
-               motherboard_source=None, top_source=None, wifi_source=None, isp_source=None):
+               motherboard_source=None, top_source=None, wifi_source=None, isp_source=None, ping_source=None):
     clock = clock or FakeClock()
     counters = counters if counters is not None else {}
 
@@ -84,6 +84,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
         top_source=top_source,
         wifi_source=wifi_source,
         isp_source=isp_source,
+        ping_source=ping_source,
     )
     return col, counters, clock
 
@@ -92,7 +93,7 @@ def test_snapshot_schema_and_hostname():
     col, _, _ = _collector()
     d = col.snapshot()
     assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps", "disks", "net", "fans", "gpus",
-                      "battery", "uptime_s", "display", "motherboard", "top", "isp", "wifi"}
+                      "battery", "uptime_s", "display", "motherboard", "top", "isp", "wifi", "ping_ms"}
     assert d["cpu"]["cores"] == (50.0, 60.0)
     assert d["hostname"] == "pc"
     assert d["cpu"]["usage_pct"] == 10.0
@@ -213,6 +214,11 @@ def test_battery_uptime_display():
     assert d["battery"] == {"percent": 77.0, "plugged": True}
     assert d["uptime_s"] == 3661
     assert d["display"] == {"refresh_hz": 144.0, "width": 2560, "height": 1440, "name": "Test Monitor"}
+
+
+def test_latency():
+    col, _, _ = _collector(ping_source=lambda: 23)
+    assert col.snapshot()["ping_ms"] == 23
 
 
 def test_network_meta():

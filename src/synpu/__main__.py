@@ -25,7 +25,7 @@ from synpu.metrics.gpu import read_gpu
 from synpu.metrics.hardware_monitor import CpuTempReader
 from synpu.metrics.motherboard import MotherboardReader
 from synpu.metrics.net import NetSpeedMeter
-from synpu.metrics.network_meta import IspReader, WifiReader
+from synpu.metrics.network_meta import IspReader, LatencyReader, WifiReader
 from synpu.metrics.processes import ProcessTopReader
 from synpu.metrics.ram import RamInfoReader, read_ram
 from synpu.metrics.smart import SmartTempReader
@@ -114,6 +114,7 @@ def main() -> None:
         top_source=ProcessTopReader().read,
         wifi_source=WifiReader().read,
         isp_source=IspReader(state_path=STATE_DIR / "isp.json").read,
+        ping_source=LatencyReader().read,
         history_path=STATE_DIR / "history.json",
         ttl=config.PUSH_INTERVAL_S,
     )
