@@ -75,7 +75,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
 def test_snapshot_schema_and_hostname():
     col, _, _ = _collector()
     d = col.snapshot()
-    assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps", "disks", "net", "fans"}
+    assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps", "disks", "net", "fans", "gpus"}
     assert d["hostname"] == "pc"
     assert d["cpu"]["usage_pct"] == 10.0
     assert d["cpu"]["temp_c"] == 55.0
