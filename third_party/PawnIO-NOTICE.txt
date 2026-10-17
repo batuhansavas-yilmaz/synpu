@@ -1,0 +1,10 @@
+PawnIO - https://pawnio.eu
+Copyright (C) 2025-2026 namazso <admin@namazso.eu>
+
+License: GNU General Public License v2 with a special exception.
+Full license text: https://github.com/namazso/PawnIO/blob/master/COPYING
+
+Synpu does not bundle PawnIO. The setup script downloads the officially
+signed installer (v2.2.0) from the official PawnIO.Setup release page and
+installs it silently. Synpu accesses PawnIO only through the device IO
+control interface used by LibreHardwareMonitorLib.

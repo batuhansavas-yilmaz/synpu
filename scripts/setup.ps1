@@ -42,7 +42,35 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-# 3) PresentMon
+# 3) PawnIO (LibreHardwareMonitor sensor surucusu)
+$pawnio = Get-Service -Name "PawnIO" -ErrorAction SilentlyContinue
+if (-not $pawnio) {
+    Write-Host "PawnIO surucusu indiriliyor..."
+    try {
+        $pawnExe = Join-Path $env:TEMP "PawnIO_setup.exe"
+        Invoke-WebRequest -Uri "https://github.com/namazso/PawnIO.Setup/releases/download/2.2.0/PawnIO_setup.exe" -OutFile $pawnExe
+        $hash = (Get-FileHash -Path $pawnExe -Algorithm SHA256).Hash.ToLower()
+        if ($hash -ne "1f519a22e47187f70a1379a48ca604981c4fcf694f4e65b734aaa74a9fba3032") {
+            throw "SHA256 dogrulamasi basarisiz"
+        }
+        $proc = Start-Process -FilePath $pawnExe -ArgumentList "-install", "-silent" -Wait -PassThru
+        Remove-Item $pawnExe -ErrorAction SilentlyContinue
+        if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
+            throw "Kurulum exit kodu: $($proc.ExitCode)"
+        }
+        Start-Sleep -Seconds 2
+        if (-not (Get-Service -Name "PawnIO" -ErrorAction SilentlyContinue)) {
+            throw "PawnIO servisi olusmadi"
+        }
+    } catch {
+        Write-Host "PawnIO kurulamadi: $_" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "PawnIO surucusu zaten kurulu."
+}
+
+# 4) PresentMon
 $pmExe = Join-Path $RepoRoot "third_party\presentmon\PresentMon.exe"
 if (-not (Test-Path $pmExe)) {
     Write-Host "PresentMon indiriliyor..."
@@ -59,7 +87,7 @@ if (-not (Test-Path $pmExe)) {
     Write-Host "PresentMon zaten var."
 }
 
-# 4) LibreHardwareMonitor
+# 5) LibreHardwareMonitor
 $lhmDll = Join-Path $RepoRoot "third_party\lhm\LibreHardwareMonitorLib.dll"
 if (-not (Test-Path $lhmDll)) {
     Write-Host "LibreHardwareMonitor indiriliyor..."
@@ -77,21 +105,21 @@ if (-not (Test-Path $lhmDll)) {
     Write-Host "LibreHardwareMonitor zaten var."
 }
 
-# 5) Guvenlik duvari kurali
+# 6) Guvenlik duvari kurali
 & (Join-Path $PSScriptRoot "firewall.ps1")
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Guvenlik duvari adimi basarisiz oldu." -ForegroundColor Red
     exit 1
 }
 
-# 6) Zamanlanmis gorev
+# 7) Zamanlanmis gorev
 & (Join-Path $PSScriptRoot "install_task.ps1")
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Zamanlanmis gorev adimi basarisiz oldu." -ForegroundColor Red
     exit 1
 }
 
-# 7) Erisim kontrolu
+# 8) Erisim kontrolu
 $port = if ($env:SYNPU_PORT) { [int]$env:SYNPU_PORT } else { 8787 }
 $ok = $false
 for ($i = 0; $i -lt 20; $i++) {

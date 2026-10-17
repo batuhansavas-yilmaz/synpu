@@ -26,7 +26,7 @@ Değer saniyede bir güncellenir. Okunamayan bir değer `—` olarak görünür 
 2. `setup.bat` dosyasına çift tıkla ve UAC onayını ver.
 3. Kurulum biter: bağımlılıklar indirilir, güvenlik duvarı kuralı eklenir ve Synpu otomatik başlar. Her açılışta kendiliğinden çalışır.
 
-Kurulum sırasında internetten indirilenler: [uv](https://astral.sh/uv) (Python paket yöneticisi), [PresentMon v2.6.0](https://github.com/GameTechDev/PresentMon) (FPS ölçümü) ve [LibreHardwareMonitor v0.9.6](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (CPU sıcaklığı). Kapalı kaynak hiçbir bileşen yoktur.
+Kurulum sırasında internetten indirilenler: [uv](https://astral.sh/uv) (Python paket yöneticisi), [PresentMon v2.6.0](https://github.com/GameTechDev/PresentMon) (FPS ölçümü), [LibreHardwareMonitor v0.9.6](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) (CPU sensörleri) ve [PawnIO v2.2.0](https://pawnio.eu) (imzalı sensör sürücüsü). Kapalı kaynak hiçbir bileşen yoktur.
 
 ## Telefonla bağlanma
 
@@ -46,7 +46,7 @@ Aynı uygulamayı diğer PC'lere de kur. Telefon sayfasındaki **"+ PC ekle"** d
 - **Telefondan bağlanamıyorum:** Telefon ve PC aynı Wi-Fi'de mi? Ağ profilinin **Özel (Private)** olması gerekir; genel ağda Windows gelen bağlantıları engeller. Güvenlik duvarı kuralı: `Get-NetFirewallRule -DisplayName "Synpu*"`.
 - **"Port 8787 kullanımda" hatası:** Synpu zaten çalışıyor olabilir. Farklı port için: `$env:SYNPU_PORT=8788; .venv\Scripts\pythonw.exe -m synpu`
 - **GPU değerleri `—`:** NVIDIA sürücüsü yok ya da kart NVIDIA değil.
-- **CPU sıcaklığı gerçek sıcaklıktan düşük görünüyor:** Windows **Çekirdek Yalıtımı / Bellek Bütünlüğü** açıksa, LHM'nin çekirdek sürücüsü engellenir ve Synpu ACPI bölge sıcaklığına düşer (daha kaba bir değer). Kapatırsan Synpu 5 dakika içinde çekirdek sensörlerine geri döner.
+- **CPU sıcaklığı sabit/düşük görünüyor:** PawnIO sürücüsü eksikse Synpu ACPI bölge sıcaklığına düşer. `Get-Service PawnIO` ile kontrol et; kurulum betiği otomatik kurar. PawnIO'nun imzalı resmi sürümü Bellek Bütünlüğü (Çekirdek Yalıtımı) açıkken de çalışır.
 - **Adres değişti:** Modem PC'ye yeni IP verdiyse QR penceresindeki adres güncellenir; telefon sayfasındaki sekmeyi silip yeniden ekle.
 
 ## Kaldırma
@@ -63,8 +63,9 @@ Sonra klasörü sil. (İsteğe bağlı: `%LOCALAPPDATA%\Synpu` klasörünü de s
 - Synpu: [MIT](LICENSE)
 - [PresentMon](https://github.com/GameTechDev/PresentMon): MIT — metin: `third_party/PresentMon-LICENSE.txt`
 - [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor): MPL-2.0 — metin: `third_party/LibreHardwareMonitor-LICENSE.txt`
+- [PawnIO](https://pawnio.eu): GPL-2.0 (özel istisnayla) — Synpu ile paketlenmez, kurulum betiği resmi imzalı sürümü indirir — metin/bağlantı: `third_party/PawnIO-NOTICE.txt`
 - Python bağımlılıkları (FastAPI, uvicorn, psutil, pythonnet, qrcode, pystray, Pillow): MIT/BSD/Apache-2.0
-- Sunucu tarafına kurulan `LibreHardwareMonitorLib.dll` ve `PresentMon.exe` bu depoda değildir; kurulum betiği indirir.
+- Sunucu tarafına kurulan `LibreHardwareMonitorLib.dll`, `PresentMon.exe` ve PawnIO bu depoda değildir; kurulum betiği indirir.
 
 ---
 
