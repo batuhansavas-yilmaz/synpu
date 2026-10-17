@@ -25,7 +25,7 @@ class FakeNet:
 def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None, gpus=(), ram_info_source=None,
                battery_source=None, uptime_source=None, disk_io_source=None, disk_map_source=None, display_source=None,
                motherboard_source=None, top_source=None, wifi_source=None, isp_source=None, ping_source=None,
-               disk_health_source=None):
+               disk_health_source=None, ram_temp_c=None, os_source=None):
     clock = clock or FakeClock()
     counters = counters if counters is not None else {}
 
@@ -61,6 +61,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
             disk_temps=(("Samsung SSD", 38.0),),
             cpu_clock_mhz=4300.0,
             gpus=tuple(gpus),
+            ram_temp_c=ram_temp_c,
         )
 
     def storage():
@@ -87,6 +88,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
         isp_source=isp_source,
         ping_source=ping_source,
         disk_health_source=disk_health_source,
+        os_source=os_source,
     )
     return col, counters, clock
 
@@ -95,7 +97,8 @@ def test_snapshot_schema_and_hostname():
     col, _, _ = _collector()
     d = col.snapshot()
     assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps", "disks", "net", "fans", "gpus",
-                      "battery", "uptime_s", "display", "motherboard", "top", "isp", "wifi", "ping_ms"}
+                      "battery", "uptime_s", "display", "motherboard", "top", "isp", "wifi", "ping_ms",
+                      "os_name"}
     assert d["cpu"]["cores"] == (50.0, 60.0)
     assert d["hostname"] == "pc"
     assert d["cpu"]["usage_pct"] == 10.0
@@ -195,6 +198,16 @@ def test_ram_info_enrichment():
     assert d["ram"]["speed_mts"] == 6000
     assert d["ram"]["mem_type"] == "DDR5"
     assert d["ram"]["module_count"] == 2
+
+
+def test_ram_temp_from_hardware_monitor():
+    col, _, _ = _collector(ram_temp_c=48.5)
+    assert col.snapshot()["ram"]["temp_c"] == 48.5
+
+
+def test_os_name_from_source():
+    col, _, _ = _collector(os_source=lambda: "Windows 11 Pro")
+    assert col.snapshot()["os_name"] == "Windows 11 Pro"
 
 
 def test_disk_health_enrichment():

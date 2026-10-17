@@ -419,6 +419,9 @@ nav.bottom .inner {
         <span class="muted">Bilgisayar</span><b id="home-sys-host">—</b>
       </div>
       <div class="row-between" style="margin-top:6px">
+        <span class="muted">İşletim Sistemi</span><b id="home-sys-os">—</b>
+      </div>
+      <div class="row-between" style="margin-top:6px">
         <span class="muted">Anakart</span><b id="home-mobo-val" style="text-align:right">—</b>
       </div>
       <div class="row-between" style="margin-top:6px">
@@ -456,10 +459,12 @@ nav.bottom .inner {
       <div class="bar"><i class="grad-purple" id="home-ram-bar" style="width:0%"></i></div>
       <div class="row-between" style="margin-top:7px">
         <span class="muted" id="val-ram-used">—</span>
-        <span class="muted" id="home-ram-total">—</span>
       </div>
       <div class="row-between" style="margin-top:5px">
         <span class="muted">Hız</span><b id="home-ram-speed" style="font-variant-numeric:tabular-nums">—</b>
+      </div>
+      <div class="row-between" style="margin-top:5px" id="home-ram-temp-row" hidden>
+        <span class="muted">Sıcaklık</span><b id="home-ram-temp" style="font-variant-numeric:tabular-nums">—</b>
       </div>
     </div>
 
@@ -590,7 +595,7 @@ nav.bottom .inner {
       <div class="muted" id="about-uptime" style="margin-top:6px"></div>
       <div class="muted" style="margin-top:6px">QR pencereyi açmak için tepsi simgesini kullan.</div>
       <div class="muted" style="margin-top:6px">
-        <a href="https://github.com/batuhansavas-yilmaz/synpu" target="_blank" rel="noopener" style="color:#6ea8ff">GitHub</a>
+        <a href="https://github.com/batuhansavas-yilmaz/synpu/releases" target="_blank" rel="noopener" style="color:#6ea8ff">GitHub</a>
       </div>
     </div>
   </div>
@@ -711,15 +716,16 @@ function clearValues() {
    "val-gpu-temp", "val-gpu-usage", "val-gpu-power", "val-gpu-freq",
    "gd-hotspot", "gd-fan", "val-cpu-freq",
    "val-ram-pct", "val-ram-used", "val-fps-app", "val-fps-value",
-   "home-sys-monitor", "home-sys-screen", "home-mobo-val",
+   "home-sys-monitor", "home-sys-screen", "home-mobo-val", "home-sys-os",
    "top-cpu", "top-ram", "top-gpu", "home-sys-host", "home-sys-uptime",
    "val-net-down", "val-net-up", "val-ping", "net-meta", "home-cpu-name", "home-gpu-name",
-   "home-ram-total", "home-ram-speed",
+   "home-ram-speed", "home-ram-temp",
    "gd-name", "gd-usage"].forEach((id) => { const el = $(id); if (el) el.textContent = dash; });
   setRing("ring-cpu", null); setRing("ring-gpu", null); setRing("ring-gpu-detail", null);
   setBar("home-ram-bar", 0);
   $("home-disks").innerHTML = '<div class="muted">' + dash + '</div>';
   $("home-fans").innerHTML = '<div class="muted">' + dash + '</div>';
+  $("home-ram-temp-row").hidden = true;
   $("battery-card").hidden = true;
   $("val-battery").textContent = dash;
   $("about-uptime").textContent = "";
@@ -779,11 +785,13 @@ function render(d) {
 
   $("val-ram-pct").textContent = fmt(ram && ram.percent, "%", 0);
   $("val-ram-used").textContent = ram ? gb(ram.used_mb) + " / " + Math.round(ram.total_mb / 1024) + " GB" : dash;
-  $("home-ram-total").textContent = ram ? Math.round(ram.percent) + "%" : dash;
   $("home-ram-speed").textContent = ram && ram.speed_mts
     ? (ram.mem_type ? ram.mem_type + " " : "") + ram.speed_mts + " MT/s" +
       (ram.module_count ? " \u00b7 " + ram.module_count + " modül" : "")
     : dash;
+  const ramTemp = ram && ram.temp_c != null ? ram.temp_c : null;
+  $("home-ram-temp-row").hidden = ramTemp == null;
+  $("home-ram-temp").textContent = ramTemp == null ? dash : fmt(ramTemp, "\u00b0C", 1);
   setBar("home-ram-bar", ram && ram.percent);
 
   renderDisks("home-disks", disks);
@@ -844,6 +852,7 @@ function render(d) {
     ? top.gpu.name + " \u00b7 " + Number(top.gpu.value).toFixed(0) + "%" : dash;
 
   $("home-sys-host").textContent = d.hostname || dash;
+  $("home-sys-os").textContent = d.os_name || dash;
   if (d.uptime_s != null) {
     const totalUp = Math.max(0, Math.floor(Number(d.uptime_s)));
     const upDays = Math.floor(totalUp / 86400);

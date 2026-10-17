@@ -22,6 +22,23 @@ def foreground_pid() -> int | None:
         return None
 
 
+def foreground_title() -> str | None:
+    try:
+        user32 = ctypes.windll.user32
+        hwnd = user32.GetForegroundWindow()
+        if not hwnd:
+            return None
+        length = user32.GetWindowTextLengthW(hwnd)
+        if length <= 0:
+            return None
+        buffer = ctypes.create_unicode_buffer(length + 1)
+        user32.GetWindowTextW(hwnd, buffer, length + 1)
+        title = buffer.value.strip()
+        return title or None
+    except Exception:
+        return None
+
+
 class FpsTracker:
     def __init__(self, exclude_apps: frozenset[str], stale_s: float):
         self._exclude = {a.lower() for a in exclude_apps}
@@ -58,7 +75,8 @@ class FpsTracker:
                 pid = None
         self._latest[app] = (time.monotonic(), ms, pid)
 
-    def current(self, now: float, foreground_pid: int | None = None) -> FpsStats:
+    def current(self, now: float, foreground_pid: int | None = None,
+                display_name: str | None = None) -> FpsStats:
         best: tuple[float, str, float] | None = None
         items = list(self._latest.items())
         for app, (ts, ms, pid) in items:
@@ -73,7 +91,7 @@ class FpsTracker:
                 best = (ts, app, ms)
         if best is None:
             return FpsStats(app=None, value=None)
-        return FpsStats(app=best[1], value=1000.0 / best[2])
+        return FpsStats(app=display_name or best[1], value=1000.0 / best[2])
 
 
 class PresentMonSampler:

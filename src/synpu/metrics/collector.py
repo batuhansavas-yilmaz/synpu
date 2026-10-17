@@ -59,7 +59,7 @@ class MetricsCollector:
                  disk_io_source=None, disk_map_source=None, display_source=None,
                  motherboard_source=None, top_source=None,
                  wifi_source=None, isp_source=None, ping_source=None,
-                 disk_health_source=None):
+                 disk_health_source=None, os_source=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -83,6 +83,7 @@ class MetricsCollector:
         self._isp_source = isp_source
         self._ping_source = ping_source
         self._disk_health_source = disk_health_source
+        self._os_source = os_source
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
@@ -137,6 +138,8 @@ class MetricsCollector:
                     mem_type=ram_info.get("mem_type"),
                     module_count=ram_info.get("module_count"),
                 )
+        if ram is not None and hw.ram_temp_c is not None:
+            ram = replace(ram, temp_c=hw.ram_temp_c)
         try:
             fps = self._fps_source(now)
         except Exception:
@@ -267,6 +270,12 @@ class MetricsCollector:
                 ping_ms = self._ping_source()
             except Exception:
                 ping_ms = None
+        os_name_value = None
+        if self._os_source is not None:
+            try:
+                os_name_value = self._os_source()
+            except Exception:
+                os_name_value = None
 
         snapshot = Snapshot(
             hostname=self._hostname,
@@ -287,6 +296,7 @@ class MetricsCollector:
             isp=isp,
             wifi=wifi,
             ping_ms=ping_ms,
+            os_name=os_name_value,
         )
         self._cached = snapshot.to_dict()
         self._cached_at = now

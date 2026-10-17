@@ -24,6 +24,7 @@ class HardwareReading:
     disk_temps: tuple[tuple[str, float], ...] = ()
     cpu_clock_mhz: float | None = None
     gpus: tuple[GpuStats, ...] = ()
+    ram_temp_c: float | None = None
 
 
 def pick_cpu_temp(sensors: list[tuple[str, float]]) -> float | None:
@@ -42,6 +43,7 @@ def _scan_computer(computer) -> HardwareReading:
     fans: list[tuple[str, float]] = []
     disks: list[tuple[str, float]] = []
     gpus: list[GpuStats] = []
+    ram_temps: list[float] = []
 
     def scan_gpu(hardware) -> GpuStats:
         usage = None
@@ -107,6 +109,10 @@ def _scan_computer(computer) -> HardwareReading:
             for sensor in hardware.Sensors:
                 if str(sensor.SensorType) == "Temperature" and sensor.Value is not None:
                     disks.append((str(hardware.Name), float(sensor.Value)))
+        elif hardware_type == "Memory":
+            for sensor in hardware.Sensors:
+                if str(sensor.SensorType) == "Temperature" and sensor.Value is not None:
+                    ram_temps.append(float(sensor.Value))
         elif hardware_type in ("GpuNvidia", "GpuAmd", "GpuIntel"):
             gpus.append(scan_gpu(hardware))
         for sensor in hardware.Sensors:
@@ -126,6 +132,7 @@ def _scan_computer(computer) -> HardwareReading:
         disk_temps=tuple(disks),
         cpu_clock_mhz=float(clock) if clock is not None else None,
         gpus=tuple(gpus),
+        ram_temp_c=max(ram_temps) if ram_temps else None,
     )
 
 
@@ -179,6 +186,7 @@ class CpuTempReader:
         computer.IsMotherboardEnabled = True
         computer.IsStorageEnabled = True
         computer.IsGpuEnabled = True
+        computer.IsMemoryEnabled = True
         computer.Open()
         self._computer = computer
         return computer

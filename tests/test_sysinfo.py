@@ -2,6 +2,7 @@ from synpu.metrics.battery import read_battery
 from synpu.metrics.display import parse_controllers, parse_monitor_name, parse_refresh_rate
 from synpu.metrics.motherboard import parse_motherboard
 from synpu.metrics.network_meta import parse_isp_org, parse_ping_ms, parse_wifi_ssid
+from synpu.metrics.sysinfo import format_os_name
 
 
 class FakeBattery:
@@ -76,3 +77,11 @@ def test_parse_ping_ms():
     assert parse_ping_ms("23") == 23
     assert parse_ping_ms("-1") is None
     assert parse_ping_ms("bad") is None
+
+
+def test_format_os_name():
+    assert format_os_name("Windows", "11", "10.0.26300", "Professional") == "Windows 11 Pro"
+    assert format_os_name("Windows", "10", "10.0.19045", "Core") == "Windows 10 Home"
+    assert format_os_name("Windows", "10", "10.0.22631", "Professional") == "Windows 11 Pro"
+    assert format_os_name("Windows", "11", "10.0.26100", "Enterprise") == "Windows 11 Enterprise"
+    assert format_os_name("Linux", "6.8", "", "") is None

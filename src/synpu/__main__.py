@@ -20,7 +20,7 @@ from synpu.metrics.collector import MetricsCollector
 from synpu.metrics.cpu import read_cpu
 from synpu.metrics.disk_io import DiskDeviceMap, DiskSpeedMeter
 from synpu.metrics.display import DisplayInfoReader
-from synpu.metrics.fps import FpsTracker, PresentMonSampler, foreground_pid
+from synpu.metrics.fps import FpsTracker, PresentMonSampler, foreground_pid, foreground_title
 from synpu.metrics.gpu import read_gpu
 from synpu.metrics.hardware_monitor import CpuTempReader
 from synpu.metrics.motherboard import MotherboardReader
@@ -30,6 +30,7 @@ from synpu.metrics.processes import ProcessTopReader
 from synpu.metrics.ram import RamInfoReader, read_ram
 from synpu.metrics.smart import DiskHealthReader, SmartTempReader
 from synpu.metrics.storage import read_disks
+from synpu.metrics.sysinfo import os_name
 from synpu.net.addresses import primary_ip
 from synpu.server.app import create_app
 from synpu.ui.qr_window import run_ui
@@ -99,7 +100,7 @@ def main() -> None:
         cpu_source=read_cpu,
         gpu_source=read_gpu,
         ram_source=read_ram,
-        fps_source=lambda now: tracker.current(now, foreground_pid()),
+        fps_source=lambda now: tracker.current(now, foreground_pid(), foreground_title()),
         hw_reader=temp_reader.read,
         storage_source=read_disks,
         net_meter=NetSpeedMeter(),
@@ -116,6 +117,7 @@ def main() -> None:
         isp_source=IspReader(state_path=STATE_DIR / "isp.json").read,
         ping_source=LatencyReader().read,
         disk_health_source=DiskHealthReader().read,
+        os_source=os_name,
         history_path=STATE_DIR / "history.json",
         ttl=config.PUSH_INTERVAL_S,
     )

@@ -80,6 +80,14 @@ def test_scan_collects_cpu_fans_and_disks():
     assert reading.gpus[0].fan_pct == 41.0
 
 
+def test_scan_collects_ram_temp():
+    dimm_a1 = FakeHardware("Memory", "DIMM A1", [FakeSensor("Temperature", "DIMM A1", 42.0)])
+    dimm_b1 = FakeHardware("Memory", "DIMM B1", [FakeSensor("Temperature", "DIMM B1", 45.0)])
+    total = FakeHardware("Memory", "Total Memory", [FakeSensor("Data", "Used Memory", 8192.0)])
+    reading = _scan_computer(FakeComputer([dimm_a1, dimm_b1, total]))
+    assert reading.ram_temp_c == 45.0
+
+
 def test_read_falls_back_to_wmi(monkeypatch):
     reader = CpuTempReader()
     monkeypatch.setattr(reader, "_try_lhm", lambda: None)

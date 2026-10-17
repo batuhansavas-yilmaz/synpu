@@ -31,6 +31,7 @@ class RamStats:
     speed_mts: int | None = None
     mem_type: str | None = None
     module_count: int | None = None
+    temp_c: float | None = None
 
 
 @dataclass(frozen=True)
@@ -118,6 +119,7 @@ class Snapshot:
     isp: str | None = None
     wifi: str | None = None
     ping_ms: int | None = None
+    os_name: str | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)

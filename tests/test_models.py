@@ -12,7 +12,8 @@ def test_snapshot_to_dict_nullable_gpu_and_fps():
                  "cpu": {"usage_pct": 10.0, "temp_c": None, "freq_mhz": None, "name": None, "cores": None},
                  "gpu": None,
                  "ram": {"used_mb": 100, "total_mb": 200, "percent": 50.0,
-                         "speed_mts": None, "mem_type": None, "module_count": None},
+                         "speed_mts": None, "mem_type": None, "module_count": None,
+                         "temp_c": None},
                  "fps": {"app": None, "value": None},
                  "disks": [],
                  "net": None,
@@ -25,4 +26,5 @@ def test_snapshot_to_dict_nullable_gpu_and_fps():
                  "top": None,
                  "isp": None,
                  "wifi": None,
-                 "ping_ms": None}
+                 "ping_ms": None,
+                 "os_name": None}

@@ -51,6 +51,14 @@ def test_tracker_foreground_only():
     assert t.current(time.monotonic(), foreground_pid=1234).app == "game.exe"
 
 
+def test_tracker_uses_window_title_as_display_name():
+    t = _tracker()
+    t.feed_line(HEADER)
+    t.feed_line(ROW_GAME)
+    fps = t.current(time.monotonic(), foreground_pid=1234, display_name="Windows PowerShell")
+    assert fps.app == "Windows PowerShell"
+
+
 def test_sampler_missing_exe_does_not_raise():
     sampler = PresentMonSampler(Path("definitely_missing_presentmon.exe"), _tracker())
     sampler.start()
