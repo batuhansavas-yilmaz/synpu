@@ -1,6 +1,8 @@
 from synpu.metrics.collector import MetricsCollector, collect_gpu_candidates, pick_active_gpu
 from synpu.metrics.hardware_monitor import HardwareReading
-from synpu.metrics.models import CpuStats, FpsStats, GpuStats, NetStats, RamStats, StorageStats
+from synpu.metrics.models import (
+    BatteryStats, CpuStats, FpsStats, GpuStats, NetStats, RamStats, StorageStats,
+)
 
 
 class FakeClock:
@@ -19,7 +21,8 @@ class FakeNet:
         return NetStats(down_bps=1_000_000.0, up_bps=200_000.0)
 
 
-def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None, gpus=(), ram_info_source=None):
+def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None, gpus=(), ram_info_source=None,
+               battery_source=None, uptime_source=None, disk_io_source=None, disk_map_source=None, display_source=None):
     clock = clock or FakeClock()
     counters = counters if counters is not None else {}
 
@@ -69,6 +72,11 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
         storage_source=storage, net_meter=FakeNet(),
         disk_temp_source=disk_temp_source,
         ram_info_source=ram_info_source,
+        battery_source=battery_source,
+        uptime_source=uptime_source,
+        disk_io_source=disk_io_source,
+        disk_map_source=disk_map_source,
+        display_source=display_source,
     )
     return col, counters, clock
 
@@ -76,7 +84,8 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
 def test_snapshot_schema_and_hostname():
     col, _, _ = _collector()
     d = col.snapshot()
-    assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps", "disks", "net", "fans", "gpus"}
+    assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps", "disks", "net", "fans", "gpus",
+                      "battery", "uptime_s", "display"}
     assert d["hostname"] == "pc"
     assert d["cpu"]["usage_pct"] == 10.0
     assert d["cpu"]["temp_c"] == 55.0
@@ -88,9 +97,9 @@ def test_snapshot_schema_and_hostname():
     assert d["fps"] == {"app": "game.exe", "value": 60.0}
     assert d["disks"] == [
         {"label": "C:", "used_mb": 100, "total_mb": 400, "percent": 25.0,
-         "temp_c": 38.0, "is_system": True},
+         "temp_c": 38.0, "is_system": True, "read_bps": None, "write_bps": None},
         {"label": "D:", "used_mb": 50, "total_mb": 200, "percent": 25.0,
-         "temp_c": None, "is_system": False},
+         "temp_c": None, "is_system": False, "read_bps": None, "write_bps": None},
     ]
     assert d["net"] == {"down_bps": 1_000_000.0, "up_bps": 200_000.0}
     assert d["fans"] == [
@@ -170,6 +179,29 @@ def test_ram_info_enrichment():
     assert d["ram"]["speed_mts"] == 6000
     assert d["ram"]["mem_type"] == "DDR5"
     assert d["ram"]["module_count"] == 2
+
+
+def test_disk_io_enrichment():
+    col, _, _ = _collector(
+        disk_io_source=lambda now: {"PhysicalDrive1": (1_048_576.0, 524_288.0)},
+        disk_map_source=lambda: {"C:": "PhysicalDrive1"},
+    )
+    d = col.snapshot()
+    assert d["disks"][0]["read_bps"] == 1_048_576.0
+    assert d["disks"][0]["write_bps"] == 524_288.0
+    assert d["disks"][1]["read_bps"] is None
+
+
+def test_battery_uptime_display():
+    col, _, _ = _collector(
+        battery_source=lambda: BatteryStats(percent=77.0, plugged=True),
+        uptime_source=lambda: 3661,
+        display_source=lambda: 144.0,
+    )
+    d = col.snapshot()
+    assert d["battery"] == {"percent": 77.0, "plugged": True}
+    assert d["uptime_s"] == 3661
+    assert d["display"] == {"refresh_hz": 144.0}
 
 
 def test_pick_active_none_cases():

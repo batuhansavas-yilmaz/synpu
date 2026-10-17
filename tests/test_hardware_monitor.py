@@ -56,6 +56,8 @@ def test_scan_collects_cpu_fans_and_disks():
     gpu = FakeHardware("GpuNvidia", "RTX Test", [
         FakeSensor("Load", "GPU Core", 33.0),
         FakeSensor("Temperature", "GPU Core", 55.0),
+        FakeSensor("Temperature", "GPU Hot Spot", 62.0),
+        FakeSensor("Fan", "GPU Fan", 41.0),
         FakeSensor("Power", "GPU Package", 120.0),
         FakeSensor("Clock", "GPU Core", 2500.0),
         FakeSensor("SmallData", "GPU Memory Used", 2048.0),
@@ -74,6 +76,8 @@ def test_scan_collects_cpu_fans_and_disks():
     assert reading.gpus[0].freq_mhz == 2500.0
     assert reading.gpus[0].vram_used_mb == 2048
     assert reading.gpus[0].vram_total_mb == 8192
+    assert reading.gpus[0].hot_spot_c == 62.0
+    assert reading.gpus[0].fan_pct == 41.0
 
 
 def test_read_falls_back_to_wmi(monkeypatch):

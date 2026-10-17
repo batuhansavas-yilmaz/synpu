@@ -11,11 +11,15 @@ if HEADLESS:
 if sys.stdout is None:
     sys.stdout = open(os.devnull, "w", encoding="utf-8")
 
+import psutil
 import uvicorn
 
 from synpu import config
+from synpu.metrics.battery import read_battery
 from synpu.metrics.collector import MetricsCollector
 from synpu.metrics.cpu import read_cpu
+from synpu.metrics.disk_io import DiskDeviceMap, DiskSpeedMeter
+from synpu.metrics.display import DisplayInfoReader
 from synpu.metrics.fps import FpsTracker, PresentMonSampler, foreground_pid
 from synpu.metrics.gpu import read_gpu
 from synpu.metrics.hardware_monitor import CpuTempReader
@@ -86,16 +90,23 @@ def main() -> None:
         sampler.start()
 
     temp_reader = CpuTempReader()
+    disk_meter = DiskSpeedMeter()
+    disk_map = DiskDeviceMap()
     collector = MetricsCollector(
         cpu_source=read_cpu,
         gpu_source=read_gpu,
         ram_source=read_ram,
-        ram_info_source=RamInfoReader().read,
         fps_source=lambda now: tracker.current(now, foreground_pid()),
         hw_reader=temp_reader.read,
         storage_source=read_disks,
         net_meter=NetSpeedMeter(),
         disk_temp_source=SmartTempReader().read,
+        ram_info_source=RamInfoReader().read,
+        battery_source=read_battery,
+        uptime_source=lambda: time.time() - psutil.boot_time(),
+        disk_io_source=disk_meter.update,
+        disk_map_source=disk_map.read,
+        display_source=DisplayInfoReader().read,
         history_path=STATE_DIR / "history.json",
         ttl=config.PUSH_INTERVAL_S,
     )

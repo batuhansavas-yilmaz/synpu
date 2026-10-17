@@ -51,6 +51,8 @@ def _scan_computer(computer) -> HardwareReading:
         vram_used = None
         vram_total = None
         fallback_usage = None
+        hot_spot = None
+        fan_pct = None
         for sensor in hardware.Sensors:
             sensor_type = str(sensor.SensorType)
             sensor_name = str(sensor.Name)
@@ -63,10 +65,14 @@ def _scan_computer(computer) -> HardwareReading:
                 fallback_usage = float(value)
             elif sensor_type == "Temperature" and sensor_name == "GPU Core":
                 temp = float(value)
+            elif sensor_type == "Temperature" and sensor_name == "GPU Hot Spot":
+                hot_spot = float(value)
             elif sensor_type == "Power" and sensor_name == "GPU Package":
                 power = float(value)
             elif sensor_type == "Clock" and sensor_name == "GPU Core":
                 freq = float(value)
+            elif sensor_type == "Fan" and sensor_name == "GPU Fan":
+                fan_pct = float(value)
             elif sensor_type == "SmallData" and sensor_name == "GPU Memory Used":
                 vram_used = int(value)
             elif sensor_type == "SmallData" and sensor_name == "GPU Memory Total":
@@ -79,6 +85,8 @@ def _scan_computer(computer) -> HardwareReading:
             vram_total_mb=vram_total,
             power_w=power,
             freq_mhz=freq,
+            hot_spot_c=hot_spot,
+            fan_pct=fan_pct,
         )
 
     def visit(hardware, depth=0):
@@ -103,7 +111,8 @@ def _scan_computer(computer) -> HardwareReading:
             gpus.append(scan_gpu(hardware))
         for sensor in hardware.Sensors:
             if str(sensor.SensorType) == "Fan" and sensor.Value is not None:
-                fans.append((str(sensor.Name), float(sensor.Value)))
+                if not hardware_type.startswith("Gpu"):
+                    fans.append((str(sensor.Name), float(sensor.Value)))
         if depth < 2:
             for sub in getattr(hardware, "SubHardware", []) or []:
                 visit(sub, depth + 1)

@@ -6,7 +6,7 @@ from dataclasses import replace
 
 from synpu.metrics.hardware_monitor import HardwareReading
 from synpu.metrics.history import HistoryBuffer
-from synpu.metrics.models import CpuStats, FanStat, FpsStats, GpuStats, Snapshot
+from synpu.metrics.models import CpuStats, DisplayStats, FanStat, FpsStats, GpuStats, Snapshot
 
 
 def _normalize_gpu_name(name: str | None) -> str:
@@ -28,6 +28,8 @@ def collect_gpu_candidates(primary: GpuStats | None, extras: tuple[GpuStats, ...
                 power_w=primary.power_w if primary.power_w is not None else extra.power_w,
                 vram_used_mb=primary.vram_used_mb if primary.vram_used_mb is not None else extra.vram_used_mb,
                 vram_total_mb=primary.vram_total_mb if primary.vram_total_mb is not None else extra.vram_total_mb,
+                hot_spot_c=primary.hot_spot_c if primary.hot_spot_c is not None else extra.hot_spot_c,
+                fan_pct=primary.fan_pct if primary.fan_pct is not None else extra.fan_pct,
             )
             continue
         candidates.append(extra)
@@ -52,7 +54,9 @@ class MetricsCollector:
     def __init__(self, cpu_source, gpu_source, ram_source, fps_source, hw_reader,
                  hostname=None, ttl=1.0, clock=time.monotonic,
                  storage_source=None, net_meter=None, disk_temp_source=None,
-                 ram_info_source=None, history_path=None):
+                 ram_info_source=None, history_path=None,
+                 battery_source=None, uptime_source=None,
+                 disk_io_source=None, disk_map_source=None, display_source=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -65,6 +69,11 @@ class MetricsCollector:
         self._net_meter = net_meter
         self._disk_temp_source = disk_temp_source
         self._ram_info_source = ram_info_source
+        self._battery_source = battery_source
+        self._uptime_source = uptime_source
+        self._disk_io_source = disk_io_source
+        self._disk_map_source = disk_map_source
+        self._display_source = display_source
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
@@ -147,6 +156,26 @@ class MetricsCollector:
                         if disk.temp_c is None and disk.label in smart_temps else disk
                         for disk in storage
                     ]
+            if storage and self._disk_io_source is not None:
+                try:
+                    io_map = self._disk_io_source(now) or {}
+                except Exception:
+                    io_map = {}
+                if io_map:
+                    letter_map = {}
+                    if self._disk_map_source is not None:
+                        try:
+                            letter_map = self._disk_map_source() or {}
+                        except Exception:
+                            letter_map = {}
+                    enriched = []
+                    for disk in storage:
+                        device = letter_map.get(disk.label)
+                        if device and device in io_map:
+                            read_bps, write_bps = io_map[device]
+                            disk = replace(disk, read_bps=read_bps, write_bps=write_bps)
+                        enriched.append(disk)
+                    storage = enriched
 
         net = None
         if self._net_meter is not None:
@@ -156,6 +185,27 @@ class MetricsCollector:
                 net = None
 
         fans = [FanStat(name=name, rpm=rpm) for name, rpm in hw.fans]
+
+        battery = None
+        if self._battery_source is not None:
+            try:
+                battery = self._battery_source()
+            except Exception:
+                battery = None
+        uptime = None
+        if self._uptime_source is not None:
+            try:
+                uptime = int(self._uptime_source())
+            except Exception:
+                uptime = None
+        display = None
+        if self._display_source is not None:
+            try:
+                refresh_hz = self._display_source()
+                if refresh_hz is not None:
+                    display = DisplayStats(refresh_hz=float(refresh_hz))
+            except Exception:
+                display = None
 
         snapshot = Snapshot(
             hostname=self._hostname,
@@ -168,6 +218,9 @@ class MetricsCollector:
             net=net,
             fans=fans,
             gpus=gpu_candidates,
+            battery=battery,
+            uptime_s=uptime,
+            display=display,
         )
         self._cached = snapshot.to_dict()
         self._cached_at = now
@@ -186,6 +239,8 @@ class MetricsCollector:
             "gpu_temp": gpu.temp_c if gpu is not None else None,
             "gpu_freq": gpu.freq_mhz if gpu is not None else None,
             "gpu_power": gpu.power_w if gpu is not None else None,
+            "gpu_hotspot": gpu.hot_spot_c if gpu is not None else None,
+            "gpu_fan": gpu.fan_pct if gpu is not None else None,
             "ram_percent": ram.percent if ram is not None else None,
             "ram_used_mb": ram.used_mb if ram is not None else None,
             "disk_percent": system_disk.percent if system_disk is not None else None,
@@ -199,4 +254,6 @@ class MetricsCollector:
                 continue
             sample[f"disk_{key}_percent"] = disk.percent
             sample[f"disk_{key}_temp"] = disk.temp_c
+            sample[f"disk_{key}_read"] = disk.read_bps
+            sample[f"disk_{key}_write"] = disk.write_bps
         return sample

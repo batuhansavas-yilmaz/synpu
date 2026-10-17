@@ -28,6 +28,7 @@
   --red: #ef4444;
 }
 * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
 html, body { background: var(--bg); }
 html { overscroll-behavior-y: none; }
 body {
@@ -294,10 +295,13 @@ nav.bottom .inner {
     <div class="card" style="margin-bottom:10px">
       <div class="row-between">
         <div>
-          <div class="card-title" style="margin:0">Oyun FPS</div>
+          <div class="card-title" style="margin:0">FPS Değeri</div>
           <div class="muted" id="val-fps-app" style="margin-top:3px">—</div>
         </div>
-        <div style="font-size:28px;font-weight:800;font-variant-numeric:tabular-nums" id="val-fps-value">—</div>
+        <div style="text-align:right">
+          <div style="font-size:28px;font-weight:800;font-variant-numeric:tabular-nums" id="val-fps-value">—</div>
+          <div class="muted" id="val-refresh" style="margin-top:2px">— Hz</div>
+        </div>
       </div>
     </div>
     <div class="gauges">
@@ -338,6 +342,7 @@ nav.bottom .inner {
       <div class="mini"><div class="k">Sıcaklık (GPU)</div><div class="v" id="home-gpu-temp">—</div></div>
       <div class="mini"><div class="k">Frekans (CPU)</div><div class="v" id="val-cpu-freq">—</div></div>
       <div class="mini"><div class="k">VRAM</div><div class="v" id="home-gpu-vram">—</div></div>
+      <div class="mini" id="battery-card" hidden><div class="k">Pil</div><div class="v" id="val-battery">—</div></div>
     </div>
 
     <div class="card" id="gpu-list-card" hidden style="margin-top:10px">
@@ -441,6 +446,8 @@ nav.bottom .inner {
           <div class="gd-item"><span class="muted">VRAM</span><b id="val-gpu-vram">—</b></div>
           <div class="gd-item"><span class="muted">Güç Tüketimi</span><b id="val-gpu-power">—</b></div>
           <div class="gd-item"><span class="muted">Frekans</span><b id="val-gpu-freq">—</b></div>
+          <div class="gd-item"><span class="muted">Hotspot</span><b id="gd-hotspot">—</b></div>
+          <div class="gd-item"><span class="muted">Fan</span><b id="gd-fan">—</b></div>
         </div>
       </div>
     </div>
@@ -477,6 +484,7 @@ nav.bottom .inner {
       <div class="card-title">Hakkında</div>
       <div class="muted">Synpu <span id="about-version">v—</span> — PC istatistikleri, telefonunda.</div>
       <div class="muted" id="about-update" style="margin-top:6px" hidden></div>
+      <div class="muted" id="about-uptime" style="margin-top:6px"></div>
       <div class="muted" style="margin-top:6px">QR pencereyi açmak için tepsi simgesini kullan.</div>
       <div class="muted" style="margin-top:6px">
         <a href="https://github.com/batuhansavas-yilmaz/synpu" target="_blank" rel="noopener" style="color:#6ea8ff">GitHub</a>
@@ -596,8 +604,9 @@ function setBar(id, pct) {
 function clearValues() {
   last = null;
   ["val-cpu-usage", "val-cpu-temp", "home-gpu-temp", "home-gpu-vram",
-   "val-gpu-temp", "val-gpu-usage", "val-gpu-power", "val-gpu-freq", "val-cpu-freq",
-   "val-ram-pct", "val-ram-used", "val-fps-app", "val-fps-value",
+   "val-gpu-temp", "val-gpu-usage", "val-gpu-power", "val-gpu-freq",
+   "gd-hotspot", "gd-fan", "val-cpu-freq",
+   "val-ram-pct", "val-ram-used", "val-fps-app", "val-fps-value", "val-refresh",
    "val-net-down", "val-net-up", "home-cpu-name", "home-gpu-name",
    "home-ram-total", "home-ram-speed",
    "gd-name", "gd-usage"].forEach((id) => { const el = $(id); if (el) el.textContent = dash; });
@@ -605,6 +614,9 @@ function clearValues() {
   setBar("home-ram-bar", 0);
   $("home-disks").innerHTML = '<div class="muted">' + dash + '</div>';
   $("home-fans").innerHTML = '<div class="muted">' + dash + '</div>';
+  $("battery-card").hidden = true;
+  $("val-battery").textContent = dash;
+  $("about-uptime").textContent = "";
   $("gpu-list-card").hidden = true;
   $("gpu-list").innerHTML = "";
 }
@@ -635,6 +647,8 @@ function render(d) {
   $("val-gpu-vram").textContent = vramText;
   $("val-gpu-power").textContent = fmt(gpu && gpu.power_w, " W", 0);
   $("val-gpu-freq").textContent = ghz(gpu && gpu.freq_mhz, 1);
+  $("gd-hotspot").textContent = fmt(gpu && gpu.hot_spot_c, "\u00b0C", 1);
+  $("gd-fan").textContent = fmt(gpu && gpu.fan_pct, "%", 0);
   $("home-gpu-name").textContent = gpu && gpu.name ? gpu.name : dash;
   $("gd-name").textContent = gpu && gpu.name ? gpu.name : dash;
   $("gd-usage").textContent = fmt(gpu && gpu.usage_pct, "", 0);
@@ -681,6 +695,28 @@ function render(d) {
 
   $("val-fps-app").textContent = fps.app || dash;
   $("val-fps-value").textContent = fps.value != null ? String(Math.round(fps.value)) : dash;
+  $("val-refresh").textContent = d.display && d.display.refresh_hz
+    ? Math.round(Number(d.display.refresh_hz)) + " Hz" : dash;
+
+  if (d.battery && d.battery.percent != null) {
+    $("battery-card").hidden = false;
+    $("val-battery").textContent = Math.round(Number(d.battery.percent)) + "%" +
+      (d.battery.plugged ? " \u26a1" : "");
+  } else {
+    $("battery-card").hidden = true;
+    $("val-battery").textContent = dash;
+  }
+
+  if (d.uptime_s != null) {
+    const total = Math.max(0, Math.floor(Number(d.uptime_s)));
+    const days = Math.floor(total / 86400);
+    const hours = Math.floor((total % 86400) / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    $("about-uptime").textContent = "Çalışma süresi: " +
+      (days > 0 ? days + " gün " : "") + hours + " sa " + minutes + " dk";
+  } else {
+    $("about-uptime").textContent = "";
+  }
 
   const fans = Array.isArray(d.fans) ? d.fans : [];
   $("home-fans").innerHTML = fans.length
@@ -708,6 +744,8 @@ function renderDisks(containerId, disks) {
     const used = d.used_mb != null && d.total_mb != null
       ? ((d.total_mb - d.used_mb) / 1024).toFixed(2) + " GB boş / " + Math.round(d.total_mb / 1024) + " GB" : dash;
     const temp = d.temp_c != null ? Number(d.temp_c).toFixed(0) + "\u00b0C" : "";
+    const io = d.read_bps != null || d.write_bps != null
+      ? bytesPerSec(d.read_bps) + " / " + bytesPerSec(d.write_bps) : "";
     return '<div class="disk-row">' +
       '<div class="row-between"><span class="disk-label">' + name + '</span>' +
       '<span class="muted">' + fmt(d.percent, "%", 0) + '</span></div>' +
@@ -715,6 +753,8 @@ function renderDisks(containerId, disks) {
         Math.max(0, Math.min(100, Number(d.percent) || 0)) + '%"></i></div>' +
       '<div class="row-between" style="margin-top:5px"><span class="muted">' + used + '</span>' +
       '<span class="muted">' + temp + '</span></div>' +
+      (io ? '<div class="row-between" style="margin-top:4px"><span class="muted">O/Y</span>' +
+        '<span class="muted">' + io + '</span></div>' : '') +
       '</div>';
   }).join("");
 }
@@ -823,6 +863,7 @@ const CHART_DEFS = {
     { key: "gpu_usage", title: "GPU Kullanımı", color: "#22c55e", suffix: "%", digits: 1 },
     { key: "gpu_temp", title: "GPU Sıcaklığı", color: "#f59e0b", suffix: "\u00b0C", digits: 1 },
     { key: "gpu_power", title: "GPU Gücü", color: "#a855f7", suffix: "W", digits: 0 },
+    { key: "gpu_fan", title: "GPU Fan", color: "#22d3ee", suffix: "%", digits: 0 },
   ],
   ram: [
     { key: "ram_percent", title: "RAM Kullanımı", color: "#3b82f6", suffix: "%", digits: 1 },
@@ -859,6 +900,16 @@ function diskChartDefs() {
       title: "Disk " + disk.label + " Sıcaklığı",
       color: tempColors[i % tempColors.length],
       suffix: "\u00b0C", digits: 1,
+    });
+    defs.push({
+      key: "disk_" + key + "_read",
+      title: "Disk " + disk.label + " Okuma",
+      color: "#14b8a6", suffix: "MB/s", digits: 2, scale: 1048576,
+    });
+    defs.push({
+      key: "disk_" + key + "_write",
+      title: "Disk " + disk.label + " Yazma",
+      color: "#ec4899", suffix: "MB/s", digits: 2, scale: 1048576,
     });
   });
   return defs.length ? defs : CHART_DEFS.disk;

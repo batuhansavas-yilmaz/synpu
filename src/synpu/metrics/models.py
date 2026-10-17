@@ -18,6 +18,8 @@ class GpuStats:
     vram_total_mb: int | None
     power_w: float | None
     freq_mhz: float | None = None
+    hot_spot_c: float | None = None
+    fan_pct: float | None = None
 
 
 @dataclass(frozen=True)
@@ -38,6 +40,8 @@ class StorageStats:
     percent: float | None = None
     temp_c: float | None = None
     is_system: bool = False
+    read_bps: float | None = None
+    write_bps: float | None = None
 
 
 @dataclass(frozen=True)
@@ -50,6 +54,17 @@ class NetStats:
 class FanStat:
     name: str
     rpm: float
+
+
+@dataclass(frozen=True)
+class BatteryStats:
+    percent: float | None = None
+    plugged: bool | None = None
+
+
+@dataclass(frozen=True)
+class DisplayStats:
+    refresh_hz: float | None = None
 
 
 @dataclass(frozen=True)
@@ -70,6 +85,9 @@ class Snapshot:
     net: NetStats | None = None
     fans: list[FanStat] = field(default_factory=list)
     gpus: list[GpuStats] = field(default_factory=list)
+    battery: BatteryStats | None = None
+    uptime_s: int | None = None
+    display: DisplayStats | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)
