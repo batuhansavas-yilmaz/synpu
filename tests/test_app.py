@@ -72,6 +72,17 @@ def test_history_endpoint(client):
     assert d["samples"] == [{"ts": 1.0, "cpu_usage": 10.0}]
 
 
+def test_startup_endpoints(client, monkeypatch):
+    from synpu import startup as startup_module
+
+    monkeypatch.setattr(startup_module, "is_enabled", lambda: True)
+    monkeypatch.setattr(startup_module, "set_enabled", lambda enabled: True)
+    response = client.get("/api/startup")
+    assert response.json() == {"enabled": True}
+    response = client.post("/api/startup?enabled=false")
+    assert response.json() == {"ok": True, "enabled": True}
+
+
 def test_version_endpoint(client):
     r = client.get("/api/version")
     assert r.status_code == 200

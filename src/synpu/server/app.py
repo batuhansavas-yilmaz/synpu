@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from synpu import config
+from synpu import config, startup
 from synpu.updates import update_info
 
 ORIGIN_REGEX = (
@@ -55,6 +55,15 @@ def create_app(collector, push_interval: float = config.PUSH_INTERVAL_S,
     @app.get("/api/version")
     def version_info():
         return update_info()
+
+    @app.get("/api/startup")
+    def startup_state():
+        return {"enabled": startup.is_enabled()}
+
+    @app.post("/api/startup")
+    def startup_set(enabled: bool = True):
+        ok = startup.set_enabled(enabled)
+        return {"ok": ok, "enabled": startup.is_enabled()}
 
     @app.get("/api/history")
     def history(minutes: int = 60):

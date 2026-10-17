@@ -8,11 +8,13 @@ from pathlib import Path
 
 WIFI_COMMAND = ["netsh", "wlan", "show", "interfaces"]
 ISP_URL = "https://ipinfo.io/json"
-PING_HOST = "8.8.8.8"
+PING_HOST = "9.9.9.9"
 PING_COMMAND = (
-    "$p = New-Object System.Net.NetworkInformation.Ping; "
-    "$r = $p.Send('8.8.8.8', 1000); "
-    "if ($r.Status -eq 'Success') { $r.RoundtripTime } else { -1 }"
+    "$sw = [System.Diagnostics.Stopwatch]::StartNew(); "
+    "$client = New-Object System.Net.Sockets.TcpClient; "
+    "try { $task = $client.ConnectAsync('9.9.9.9', 53); "
+    "if ($task.Wait(1500)) { $sw.ElapsedMilliseconds } else { -1 } } "
+    "catch { -1 } finally { $client.Close() }"
 )
 
 

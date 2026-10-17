@@ -58,7 +58,8 @@ class MetricsCollector:
                  battery_source=None, uptime_source=None,
                  disk_io_source=None, disk_map_source=None, display_source=None,
                  motherboard_source=None, top_source=None,
-                 wifi_source=None, isp_source=None, ping_source=None):
+                 wifi_source=None, isp_source=None, ping_source=None,
+                 disk_health_source=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -81,6 +82,7 @@ class MetricsCollector:
         self._wifi_source = wifi_source
         self._isp_source = isp_source
         self._ping_source = ping_source
+        self._disk_health_source = disk_health_source
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
@@ -181,6 +183,30 @@ class MetricsCollector:
                         if device and device in io_map:
                             read_bps, write_bps = io_map[device]
                             disk = replace(disk, read_bps=read_bps, write_bps=write_bps)
+                        enriched.append(disk)
+                    storage = enriched
+            if storage and self._disk_health_source is not None:
+                try:
+                    health_map = self._disk_health_source() or {}
+                except Exception:
+                    health_map = {}
+                if health_map:
+                    letter_map = {}
+                    if self._disk_map_source is not None:
+                        try:
+                            letter_map = self._disk_map_source() or {}
+                        except Exception:
+                            letter_map = {}
+                    enriched = []
+                    for disk in storage:
+                        device = letter_map.get(disk.label)
+                        entry = health_map.get(device) if device else None
+                        if entry:
+                            disk = replace(
+                                disk,
+                                health_pct=entry.get("health_pct"),
+                                power_on_hours=entry.get("power_on_hours"),
+                            )
                         enriched.append(disk)
                     storage = enriched
 

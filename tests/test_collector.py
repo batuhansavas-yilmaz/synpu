@@ -24,7 +24,8 @@ class FakeNet:
 
 def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None, gpus=(), ram_info_source=None,
                battery_source=None, uptime_source=None, disk_io_source=None, disk_map_source=None, display_source=None,
-               motherboard_source=None, top_source=None, wifi_source=None, isp_source=None, ping_source=None):
+               motherboard_source=None, top_source=None, wifi_source=None, isp_source=None, ping_source=None,
+               disk_health_source=None):
     clock = clock or FakeClock()
     counters = counters if counters is not None else {}
 
@@ -85,6 +86,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
         wifi_source=wifi_source,
         isp_source=isp_source,
         ping_source=ping_source,
+        disk_health_source=disk_health_source,
     )
     return col, counters, clock
 
@@ -106,9 +108,11 @@ def test_snapshot_schema_and_hostname():
     assert d["fps"] == {"app": "game.exe", "value": 60.0}
     assert d["disks"] == [
         {"label": "C:", "used_mb": 100, "total_mb": 400, "percent": 25.0,
-         "temp_c": 38.0, "is_system": True, "read_bps": None, "write_bps": None},
+         "temp_c": 38.0, "is_system": True, "read_bps": None, "write_bps": None,
+         "health_pct": None, "power_on_hours": None},
         {"label": "D:", "used_mb": 50, "total_mb": 200, "percent": 25.0,
-         "temp_c": None, "is_system": False, "read_bps": None, "write_bps": None},
+         "temp_c": None, "is_system": False, "read_bps": None, "write_bps": None,
+         "health_pct": None, "power_on_hours": None},
     ]
     assert d["net"] == {"down_bps": 1_000_000.0, "up_bps": 200_000.0}
     assert d["fans"] == [
@@ -191,6 +195,16 @@ def test_ram_info_enrichment():
     assert d["ram"]["speed_mts"] == 6000
     assert d["ram"]["mem_type"] == "DDR5"
     assert d["ram"]["module_count"] == 2
+
+
+def test_disk_health_enrichment():
+    col, _, _ = _collector(
+        disk_health_source=lambda: {"PhysicalDrive1": {"health_pct": 97.0, "power_on_hours": 1234}},
+        disk_map_source=lambda: {"C:": "PhysicalDrive1"},
+    )
+    d = col.snapshot()
+    assert d["disks"][0]["health_pct"] == 97.0
+    assert d["disks"][0]["power_on_hours"] == 1234
 
 
 def test_disk_io_enrichment():

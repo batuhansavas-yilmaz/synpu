@@ -16,6 +16,67 @@ $smart = @(Get-CimInstance -Namespace root/wmi -ClassName MSStorageDriver_ATAPIS
 
 SMART_TTL_S = 60.0
 
+HEALTH_COMMAND = (
+    "Get-PhysicalDisk | ForEach-Object { "
+    "$r = $_ | Get-StorageReliabilityCounter -ErrorAction SilentlyContinue; "
+    '[pscustomobject]@{ disk = $_.DeviceId; wear = $r.Wear; hours = $r.PowerOnHours } '
+    "} | ConvertTo-Json"
+)
+
+
+def parse_health(payload) -> dict[str, dict]:
+    items = payload if isinstance(payload, list) else ([payload] if isinstance(payload, dict) else [])
+    result: dict[str, dict] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        try:
+            disk = int(item.get("disk"))
+        except (TypeError, ValueError):
+            continue
+        entry: dict = {}
+        wear = item.get("wear")
+        if wear is not None:
+            try:
+                entry["health_pct"] = max(0.0, min(100.0, 100.0 - float(wear)))
+            except (TypeError, ValueError):
+                pass
+        hours = item.get("hours")
+        if hours is not None:
+            try:
+                entry["power_on_hours"] = int(hours)
+            except (TypeError, ValueError):
+                pass
+        if entry:
+            result[f"PhysicalDrive{disk}"] = entry
+    return result
+
+
+class DiskHealthReader:
+    def __init__(self, ttl: float = 3600.0):
+        self._ttl = ttl
+        self._value: dict[str, dict] = {}
+        self._at = float("-inf")
+
+    def read(self) -> dict[str, dict]:
+        now = time.monotonic()
+        if now - self._at < self._ttl:
+            return self._value
+        self._at = now
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", HEALTH_COMMAND],
+                capture_output=True,
+                text=True,
+                timeout=20,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                self._value = parse_health(json.loads(result.stdout))
+        except Exception:
+            pass
+        return self._value
+
 
 def parse_smart_temp(raw: bytes) -> float | None:
     attrs: dict[int, bytes] = {}

@@ -43,6 +43,8 @@ class StorageStats:
     is_system: bool = False
     read_bps: float | None = None
     write_bps: float | None = None
+    health_pct: float | None = None
+    power_on_hours: int | None = None
 
 
 @dataclass(frozen=True)

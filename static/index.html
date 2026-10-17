@@ -147,6 +147,11 @@ nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-templa
 .install-btn { background: var(--blue); border: 0; color: #fff; border-radius: 10px; padding: 8px 12px;
   font-size: 12px; font-weight: 700; cursor: pointer; }
 .install-x { background: transparent; border: 0; color: var(--muted); font-size: 14px; cursor: pointer; padding: 4px; }
+.v-warn { color: #f5a623 !important; }
+.v-danger { color: #ef4444 !important; }
+.warn-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-left: 6px;
+  background: #f5a623; vertical-align: middle; }
+.warn-dot.danger { background: #ef4444; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(4, 8, 18, 0.65);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: flex; align-items: flex-start;
   justify-content: center; padding: 70px 16px 16px; }
@@ -343,8 +348,8 @@ nav.bottom .inner {
     </div>
 
     <div class="mini-grid">
-      <div class="mini"><div class="k">Sıcaklık (CPU)</div><div class="v" id="val-cpu-temp">—</div></div>
-      <div class="mini"><div class="k">Sıcaklık (GPU)</div><div class="v" id="home-gpu-temp">—</div></div>
+      <div class="mini"><div class="k">Sıcaklık (CPU)<span class="warn-dot" id="warn-cpu-temp" hidden></span></div><div class="v" id="val-cpu-temp">—</div></div>
+      <div class="mini"><div class="k">Sıcaklık (GPU)<span class="warn-dot" id="warn-gpu-temp" hidden></span></div><div class="v" id="home-gpu-temp">—</div></div>
       <div class="mini"><div class="k">Frekans (CPU)</div><div class="v" id="val-cpu-freq">—</div></div>
       <div class="mini"><div class="k">VRAM</div><div class="v" id="home-gpu-vram">—</div></div>
       <div class="mini" id="battery-card" hidden><div class="k">Pil</div><div class="v" id="val-battery">—</div></div>
@@ -402,6 +407,7 @@ nav.bottom .inner {
         <div class="card-title" style="margin:0">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="10" rx="2"/><path d="M7 20v-4M12 20v-4M17 20v-4"/></svg>
           Bellek (RAM)
+          <span class="warn-dot" id="warn-ram" hidden></span>
         </div>
         <div class="muted" id="val-ram-pct">—</div>
       </div>
@@ -419,6 +425,7 @@ nav.bottom .inner {
       <div class="card-title">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 4v16M4 8h4M4 16h4"/></svg>
         Depolama
+        <span class="warn-dot" id="warn-disk" hidden></span>
       </div>
       <div class="list" id="home-disks"><div class="muted">—</div></div>
     </div>
@@ -543,6 +550,10 @@ nav.bottom .inner {
       <div class="card-title">Yenileme</div>
       <div class="muted">Canlı akış: 0.1 sn (WebSocket). Bağlantı koparsa 1 sn yoklama.</div>
       <button class="btn" id="export-csv" type="button" style="width:100%;margin-top:10px">Grafik verilerini indir (CSV)</button>
+      <div class="row-between" style="margin-top:10px">
+        <span class="muted">Başlangıçta çalıştır</span>
+        <button class="btn" id="startup-toggle" type="button">—</button>
+      </div>
     </div>
     <div class="card">
       <div class="card-title">Hakkında</div>
@@ -690,6 +701,22 @@ function clearValues() {
   $("gpu-list").innerHTML = "";
 }
 
+function applyWarn(valueId, dotId, value, warnAt, dangerAt) {
+  const el = $(valueId);
+  const dot = dotId ? $(dotId) : null;
+  if (el) el.classList.remove("v-warn", "v-danger");
+  if (dot) { dot.hidden = true; dot.classList.remove("danger"); }
+  if (value === null || value === undefined || !isFinite(value)) return;
+  const number = Number(value);
+  if (number >= dangerAt) {
+    if (el) el.classList.add("v-danger");
+    if (dot) { dot.hidden = false; dot.classList.add("danger"); }
+  } else if (number >= warnAt) {
+    if (el) el.classList.add("v-warn");
+    if (dot) dot.hidden = false;
+  }
+}
+
 function render(d) {
   last = d;
   lastDisks = Array.isArray(d.disks) ? d.disks : [];
@@ -766,6 +793,10 @@ function render(d) {
   if (d.isp) netMeta.push(d.isp);
   if (d.wifi) netMeta.push(d.wifi);
   $("net-meta").textContent = netMeta.length ? netMeta.join(" \u00b7 ") : dash;
+  $("val-ping").textContent = d.ping_ms != null ? String(d.ping_ms) + " ms" : dash;
+  const titleCpu = cpu.usage_pct != null ? Math.round(Number(cpu.usage_pct)) : "\u2014";
+  const titleGpu = gpu && gpu.usage_pct != null ? Math.round(Number(gpu.usage_pct)) : "\u2014";
+  document.title = "Synpu \u00b7 CPU " + titleCpu + "% \u00b7 GPU " + titleGpu + "%";
 
   $("val-fps-app").textContent = fps.app || dash;
   $("val-fps-value").textContent = fps.value != null ? String(Math.round(fps.value)) : dash;
@@ -826,6 +857,11 @@ function render(d) {
   const motherboard = d.motherboard;
   $("home-mobo-vendor").textContent = motherboard && motherboard.vendor ? motherboard.vendor : dash;
   $("home-mobo-model").textContent = motherboard && motherboard.model ? motherboard.model : dash;
+
+  applyWarn("val-cpu-temp", "warn-cpu-temp", cpu.temp_c, 70, 80);
+  applyWarn("home-gpu-temp", "warn-gpu-temp", gpu && gpu.temp_c, 70, 80);
+  applyWarn("val-gpu-temp", null, gpu && gpu.temp_c, 70, 80);
+  applyWarn("val-ram-pct", "warn-ram", ram && ram.percent, 90, 97);
 }
 
 function escapeHtml(text) {
@@ -850,17 +886,30 @@ function renderDisks(containerId, disks) {
     const temp = d.temp_c != null ? Number(d.temp_c).toFixed(0) + "\u00b0C" : "";
     const io = d.read_bps != null || d.write_bps != null
       ? bytesPerSec(d.read_bps) + " / " + bytesPerSec(d.write_bps) : "";
+    const health = d.health_pct != null
+      ? "Sağlık %" + Number(d.health_pct).toFixed(0) +
+        (d.power_on_hours != null ? " \u00b7 " + Math.round(d.power_on_hours) + " sa" : "")
+      : "";
+    const percent = Number(d.percent);
+    const pctClass = percent >= 95 ? "v-danger" : percent >= 85 ? "v-warn" : "";
     return '<div class="disk-row">' +
       '<div class="row-between"><span class="disk-label">' + name + '</span>' +
-      '<span class="muted">' + fmt(d.percent, "%", 0) + '</span></div>' +
+      '<span class="muted ' + pctClass + '">' + fmt(d.percent, "%", 0) + '</span></div>' +
       '<div class="bar" style="margin-top:6px"><i class="grad-blue" style="width:' +
         Math.max(0, Math.min(100, Number(d.percent) || 0)) + '%"></i></div>' +
       '<div class="row-between" style="margin-top:5px"><span class="muted">' + used + '</span>' +
       '<span class="muted">' + temp + '</span></div>' +
       (io ? '<div class="row-between" style="margin-top:4px"><span class="muted">O/Y</span>' +
         '<span class="muted">' + io + '</span></div>' : '') +
+      (health ? '<div class="row-between" style="margin-top:4px"><span class="muted">' + health + '</span></div>' : '') +
       '</div>';
   }).join("");
+  const highest = disks.reduce((max, disk) => Math.max(max, Number(disk.percent) || 0), 0);
+  const dot = $("warn-disk");
+  if (dot) {
+    dot.hidden = highest < 85;
+    dot.classList.toggle("danger", highest >= 95);
+  }
 }
 
 function stopConn() {
@@ -1433,6 +1482,7 @@ $("add-modal").addEventListener("click", (ev) => { if (ev.target === $("add-moda
 function openSettingsModal() {
   renderSettings();
   refreshVersion();
+  refreshStartup();
   $("settings-modal").hidden = false;
 }
 
@@ -1478,6 +1528,41 @@ async function exportHistoryCsv() {
 }
 
 $("export-csv").addEventListener("click", exportHistoryCsv);
+
+let startupEnabled = null;
+
+function updateStartupButton() {
+  const button = $("startup-toggle");
+  if (!button) return;
+  button.textContent = startupEnabled === null ? "—" : (startupEnabled ? "Açık" : "Kapalı");
+}
+
+async function refreshStartup() {
+  const pc = pcs[active];
+  if (!pc) return;
+  try {
+    const res = await fetch(pc.url + "/api/startup", { cache: "no-store" });
+    const data = await res.json();
+    startupEnabled = !!data.enabled;
+  } catch (e) {
+    startupEnabled = null;
+  }
+  updateStartupButton();
+}
+
+async function toggleStartup() {
+  const pc = pcs[active];
+  if (!pc || startupEnabled === null) return;
+  const target = !startupEnabled;
+  try {
+    const res = await fetch(pc.url + "/api/startup?enabled=" + target, { method: "POST" });
+    const data = await res.json();
+    startupEnabled = !!data.enabled;
+  } catch (e) {}
+  updateStartupButton();
+}
+
+$("startup-toggle").addEventListener("click", toggleStartup);
 
 renderSettings();
 activate(active);

@@ -1,4 +1,4 @@
-from synpu.metrics.smart import parse_smart_payload, parse_smart_temp
+from synpu.metrics.smart import parse_health, parse_smart_payload, parse_smart_temp
 
 
 def _table(attrs: dict[int, tuple[int, ...]]) -> bytes:
@@ -41,3 +41,13 @@ def test_parse_payload_maps_letter():
         ],
     }
     assert parse_smart_payload(payload) == {"D:": 36.0}
+
+
+def test_parse_health():
+    payload = [
+        {"disk": 0, "wear": 3, "hours": 1234},
+        {"disk": 1, "wear": None, "hours": None},
+    ]
+    assert parse_health(payload) == {
+        "PhysicalDrive0": {"health_pct": 97.0, "power_on_hours": 1234},
+    }

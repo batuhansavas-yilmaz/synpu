@@ -28,7 +28,7 @@ from synpu.metrics.net import NetSpeedMeter
 from synpu.metrics.network_meta import IspReader, LatencyReader, WifiReader
 from synpu.metrics.processes import ProcessTopReader
 from synpu.metrics.ram import RamInfoReader, read_ram
-from synpu.metrics.smart import SmartTempReader
+from synpu.metrics.smart import DiskHealthReader, SmartTempReader
 from synpu.metrics.storage import read_disks
 from synpu.net.addresses import primary_ip
 from synpu.server.app import create_app
@@ -115,6 +115,7 @@ def main() -> None:
         wifi_source=WifiReader().read,
         isp_source=IspReader(state_path=STATE_DIR / "isp.json").read,
         ping_source=LatencyReader().read,
+        disk_health_source=DiskHealthReader().read,
         history_path=STATE_DIR / "history.json",
         ttl=config.PUSH_INTERVAL_S,
     )
