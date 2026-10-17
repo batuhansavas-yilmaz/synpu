@@ -36,7 +36,7 @@ def create_app(collector, push_interval: float = config.PUSH_INTERVAL_S,
 
     @app.get("/")
     def index():
-        return FileResponse(static_dir / "index.html")
+        return FileResponse(static_dir / "index.html", headers={"Cache-Control": "no-store"})
 
     @app.get("/api/snapshot")
     def snapshot():
