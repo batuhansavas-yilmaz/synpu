@@ -80,7 +80,11 @@ class HistoryBuffer:
             for key, value in sample.items():
                 if key == "ts" or value is None:
                     continue
-                self._sums[key] = self._sums.get(key, 0.0) + float(value)
+                try:
+                    number = float(value)
+                except (TypeError, ValueError):
+                    continue
+                self._sums[key] = self._sums.get(key, 0.0) + number
                 self._counts[key] = self._counts.get(key, 0) + 1
             self._last_sample_ts = sample.get("ts", now)
             if now - self._window_start >= 60.0:

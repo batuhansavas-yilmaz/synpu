@@ -526,6 +526,7 @@ let chartTab = "cpu";
 let rangeMinutes = 10;
 let chartTimer = null;
 let last = null;
+let lastDisks = [];
 
 function loadPcs() {
   let list;
@@ -604,6 +605,7 @@ function clearValues() {
 
 function render(d) {
   last = d;
+  lastDisks = Array.isArray(d.disks) ? d.disks : [];
   const cpu = d.cpu || {};
   const gpu = d.gpu;
   const ram = d.ram;
@@ -828,7 +830,33 @@ const CHART_DEFS = {
 
 function defsFor(screenName) {
   if (screenName === "gpu") return CHART_DEFS.gpu.slice(0, 2);
+  if (chartTab === "disk") return diskChartDefs();
   return CHART_DEFS[chartTab] || [];
+}
+
+function diskChartDefs() {
+  const disks = lastDisks.slice();
+  if (!disks.length) return CHART_DEFS.disk;
+  const usageColors = ["#a855f7", "#3b82f6", "#22c55e", "#14b8a6"];
+  const tempColors = ["#f59e0b", "#ef4444", "#eab308", "#f97316"];
+  const defs = [];
+  disks.forEach((disk, i) => {
+    const key = String(disk.label || "").replace(/[^A-Za-z0-9]/g, "");
+    if (!key) return;
+    defs.push({
+      key: "disk_" + key + "_percent",
+      title: "Disk " + disk.label + " Kullanımı",
+      color: usageColors[i % usageColors.length],
+      suffix: "%", digits: 1,
+    });
+    defs.push({
+      key: "disk_" + key + "_temp",
+      title: "Disk " + disk.label + " Sıcaklığı",
+      color: tempColors[i % tempColors.length],
+      suffix: "\u00b0C", digits: 1,
+    });
+  });
+  return defs.length ? defs : CHART_DEFS.disk;
 }
 
 function buildChartCards() {

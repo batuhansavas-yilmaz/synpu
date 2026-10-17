@@ -177,7 +177,7 @@ class MetricsCollector:
     @staticmethod
     def _history_sample(ts, cpu, gpu, ram, disks, net) -> dict:
         system_disk = next((d for d in disks if d.is_system), disks[0] if disks else None)
-        return {
+        sample = {
             "ts": ts,
             "cpu_usage": cpu.usage_pct,
             "cpu_temp": cpu.temp_c,
@@ -193,3 +193,10 @@ class MetricsCollector:
             "net_down": net.down_bps if net is not None else None,
             "net_up": net.up_bps if net is not None else None,
         }
+        for disk in disks:
+            key = re.sub(r"[^A-Za-z0-9]", "", str(disk.label or ""))
+            if not key:
+                continue
+            sample[f"disk_{key}_percent"] = disk.percent
+            sample[f"disk_{key}_temp"] = disk.temp_c
+        return sample
