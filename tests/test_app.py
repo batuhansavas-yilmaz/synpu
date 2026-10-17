@@ -56,6 +56,17 @@ def test_ws_accepts_private_origin(client):
         assert d["hostname"] == "pc"
 
 
+def test_index_contains_dashboard_ids():
+    app = create_app(FakeCollector())
+    with TestClient(app) as real_client:
+        r = real_client.get("/")
+    assert r.status_code == 200
+    body = r.text
+    assert 'id="val-cpu-usage"' in body
+    assert 'id="add-pc"' in body
+    assert "synpu.pcs" in body
+
+
 def test_allowed_origin_regex():
     assert is_allowed_origin(None)
     assert is_allowed_origin("http://localhost:8787")

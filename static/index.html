@@ -2,10 +2,229 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Synpu</title>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; margin: 0; }
+body {
+  background: #0f1117; color: #e6e8ee;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding: 14px; max-width: 560px; margin: 0 auto; min-height: 100vh;
+}
+header { display: flex; align-items: center; gap: 10px; }
+h1 { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+#status { width: 10px; height: 10px; border-radius: 50%; background: #e5484d; }
+#status.live { background: #46a758; }
+#status.poll { background: #f5a623; }
+#add-pc {
+  margin-left: auto; background: #232735; color: #e6e8ee; border: 0;
+  border-radius: 10px; padding: 8px 12px; font-size: 14px; cursor: pointer;
+}
+#tabs { display: flex; gap: 8px; overflow-x: auto; margin: 12px 0; }
+.tab {
+  flex: 0 0 auto; background: #171a23; border-radius: 10px; padding: 8px 10px;
+  font-size: 14px; color: #9aa1b2; display: flex; align-items: center; gap: 6px;
+  cursor: pointer; user-select: none;
+}
+.tab.active { background: #2b3149; color: #fff; }
+.tab .x { opacity: .5; padding: 0 2px; }
+.tab .x:hover { opacity: 1; color: #e5484d; }
+#cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.card { background: #171a23; border-radius: 14px; padding: 14px; min-width: 0; }
+.card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: #9aa1b2; font-weight: 600; margin-bottom: 8px; }
+.big { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: #9aa1b2; margin-top: 6px; }
+.row b { color: #e6e8ee; font-weight: 600; font-variant-numeric: tabular-nums; }
+.sub { font-size: 12px; color: #9aa1b2; margin-bottom: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
 </head>
 <body>
-<h1>Synpu</h1>
-<p>arayuz yukleniyor...</p>
+<header>
+  <h1>Synpu</h1>
+  <span id="status" title="Bağlantı yok"></span>
+  <button id="add-pc" type="button">+ PC ekle</button>
+</header>
+<div id="tabs"></div>
+<div id="cards">
+  <div class="card">
+    <h2>İşlemci</h2>
+    <div class="big" id="val-cpu-usage">—</div>
+    <div class="row"><span>Sıcaklık</span><b id="val-cpu-temp">—</b></div>
+  </div>
+  <div class="card">
+    <h2>Ekran Kartı</h2>
+    <div class="sub" id="gpu-name">—</div>
+    <div class="big" id="val-gpu-usage">—</div>
+    <div class="row"><span>Sıcaklık</span><b id="val-gpu-temp">—</b></div>
+    <div class="row"><span>VRAM</span><b id="val-gpu-vram">—</b></div>
+    <div class="row"><span>Güç</span><b id="val-gpu-power">—</b></div>
+  </div>
+  <div class="card">
+    <h2>Bellek</h2>
+    <div class="big" id="val-ram-pct">—</div>
+    <div class="row"><span>Kullanılan</span><b id="val-ram-used">—</b></div>
+  </div>
+  <div class="card">
+    <h2>Oyun FPS</h2>
+    <div class="sub" id="val-fps-app">—</div>
+    <div class="big" id="val-fps-value">—</div>
+  </div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const dash = "\u2014";
+const fmt = (v, unit, digits) =>
+  v === null || v === undefined ? dash : Number(v).toFixed(digits || 0) + (unit || "");
+
+const STORE = "synpu.pcs";
+const SELF = { name: location.hostname || "bu-pc", url: location.origin };
+
+let pcs = loadPcs();
+let active = Math.max(0, pcs.findIndex((p) => p.url === SELF.url));
+let ws = null, watchdog = null, pollTimer = null, retryTimer = null;
+
+function loadPcs() {
+  let list;
+  try { list = JSON.parse(localStorage.getItem(STORE)); } catch (e) { list = null; }
+  if (!Array.isArray(list)) list = [];
+  list = list.filter((p) => p && p.url && p.name);
+  if (!list.some((p) => p.url === SELF.url)) list.push(SELF);
+  return list;
+}
+
+function savePcs() {
+  localStorage.setItem(STORE, JSON.stringify(pcs));
+}
+
+function setStatus(state) {
+  const el = $("status");
+  el.className = state || "";
+  el.title = state === "live" ? "Canlı bağlantı"
+    : state === "poll" ? "Yedek mod (yoklama)" : "Bağlantı yok";
+}
+
+function render(d) {
+  $("val-cpu-usage").textContent = fmt(d.cpu && d.cpu.usage_pct, "%", 0);
+  $("val-cpu-temp").textContent = fmt(d.cpu && d.cpu.temp_c, "\u00b0C", 0);
+  const g = d.gpu;
+  $("gpu-name").textContent = g && g.name ? g.name : dash;
+  $("val-gpu-usage").textContent = fmt(g && g.usage_pct, "%", 0);
+  $("val-gpu-temp").textContent = fmt(g && g.temp_c, "\u00b0C", 0);
+  $("val-gpu-vram").textContent = g && g.vram_used_mb != null
+    ? (g.vram_used_mb / 1024).toFixed(1) + " / " + Math.round(g.vram_total_mb / 1024) + " GB"
+    : dash;
+  $("val-gpu-power").textContent = fmt(g && g.power_w, " W", 0);
+  const r = d.ram;
+  $("val-ram-pct").textContent = fmt(r && r.percent, "%", 1);
+  $("val-ram-used").textContent = r
+    ? (r.used_mb / 1024).toFixed(1) + " / " + Math.round(r.total_mb / 1024) + " GB"
+    : dash;
+  $("val-fps-app").textContent = (d.fps && d.fps.app) || dash;
+  $("val-fps-value").textContent = d.fps && d.fps.value != null
+    ? String(Math.round(d.fps.value)) : dash;
+}
+
+function stopConn() {
+  clearTimeout(watchdog); watchdog = null;
+  clearInterval(pollTimer); pollTimer = null;
+  clearInterval(retryTimer); retryTimer = null;
+  if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} ws = null; }
+}
+
+function startPolling(pc) {
+  setStatus("poll");
+  if (!pollTimer) {
+    const tick = async () => {
+      try {
+        const res = await fetch(pc.url + "/api/snapshot", { cache: "no-store" });
+        render(await res.json());
+      } catch (e) { setStatus("dead"); }
+    };
+    tick();
+    pollTimer = setInterval(tick, 2000);
+  }
+  if (!retryTimer) retryTimer = setInterval(() => tryWs(pc), 5000);
+}
+
+function tryWs(pc) {
+  if (ws || pcs[active] !== pc) return;
+  try { ws = new WebSocket(pc.url.replace(/^http/, "ws") + "/ws"); }
+  catch (e) { startPolling(pc); return; }
+  watchdog = setTimeout(() => {
+    if (ws && ws.readyState !== 1) { try { ws.close(); } catch (e) {} }
+  }, 2000);
+  ws.onopen = () => {
+    clearTimeout(watchdog); watchdog = null;
+    clearInterval(pollTimer); pollTimer = null;
+    clearInterval(retryTimer); retryTimer = null;
+    setStatus("live");
+  };
+  ws.onmessage = (ev) => { try { render(JSON.parse(ev.data)); } catch (e) {} };
+  ws.onclose = () => {
+    ws = null;
+    if (pcs[active] === pc) { setStatus("dead"); startPolling(pc); }
+  };
+  ws.onerror = () => { if (ws) { try { ws.close(); } catch (e) {} } };
+}
+
+function renderTabs() {
+  const el = $("tabs");
+  el.innerHTML = "";
+  pcs.forEach((pc, i) => {
+    const tab = document.createElement("div");
+    tab.className = "tab" + (i === active ? " active" : "");
+    const label = document.createElement("span");
+    label.textContent = pc.name;
+    tab.appendChild(label);
+    const x = document.createElement("span");
+    x.className = "x";
+    x.textContent = "\u2715";
+    x.addEventListener("click", (ev) => { ev.stopPropagation(); removePc(i); });
+    tab.appendChild(x);
+    tab.addEventListener("click", () => activate(i));
+    el.appendChild(tab);
+  });
+}
+
+function removePc(i) {
+  pcs.splice(i, 1);
+  if (active > i) active--;
+  if (active >= pcs.length) active = pcs.length - 1;
+  savePcs();
+  stopConn();
+  if (pcs.length === 0) { setStatus("dead"); renderTabs(); return; }
+  activate(active);
+}
+
+function activate(i) {
+  active = i;
+  const pc = pcs[active];
+  renderTabs();
+  stopConn();
+  if (!pc) { setStatus("dead"); return; }
+  tryWs(pc);
+}
+
+$("add-pc").addEventListener("click", () => {
+  const input = prompt("Diğer PC adresi (örn: http://192.168.1.50:8787)");
+  if (!input) return;
+  let url = input.trim().replace(/\/+$/, "");
+  if (!/^https?:\/\//i.test(url)) url = "http://" + url;
+  let name;
+  try { name = new URL(url).hostname; } catch (e) { alert("Geçersiz adres"); return; }
+  const existing = pcs.findIndex((p) => p.url === url);
+  if (existing >= 0) { activate(existing); return; }
+  pcs.push({ name: name, url: url });
+  savePcs();
+  activate(pcs.length - 1);
+});
+
+renderTabs();
+activate(active);
+</script>
 </body>
 </html>
