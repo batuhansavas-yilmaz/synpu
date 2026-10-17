@@ -105,7 +105,15 @@ class HistoryBuffer:
             if minutes <= 60:
                 source = list(self._raw)
             else:
-                source = list(self._minute) or list(self._raw)
+                source = list(self._minute)
+                if source:
+                    last_minute_ts = source[-1].get("ts", 0)
+                    source.extend(
+                        sample for sample in self._raw
+                        if sample.get("ts", 0) > last_minute_ts
+                    )
+                else:
+                    source = list(self._raw)
         if not source:
             return []
         cutoff = source[-1]["ts"] - minutes * 60

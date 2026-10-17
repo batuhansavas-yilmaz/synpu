@@ -29,16 +29,18 @@
 }
 * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
 html, body { background: var(--bg); }
+html { overscroll-behavior-y: none; }
 body {
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   min-height: 100vh;
+  overscroll-behavior-y: none;
 }
 .app {
   max-width: 520px; margin: 0 auto;
-  padding: 10px 14px 92px;
+  padding: 10px 14px 78px;
   padding-top: calc(6px + env(safe-area-inset-top) + var(--sat-extra, 0px));
-  padding-bottom: calc(92px + env(safe-area-inset-bottom) + var(--sab-extra, 0px));
+  padding-bottom: calc(78px + env(safe-area-inset-bottom) + var(--sab-extra, 0px));
 }
 header.top { display: flex; align-items: center; gap: 10px; padding: 0 0 10px; }
 .logo-mark { width: 30px; height: 30px; flex: 0 0 auto; }
@@ -202,7 +204,7 @@ nav.bottom .inner {
 .pc-item.active { background: rgba(110, 168, 255, 0.14); border-color: rgba(110, 168, 255, 0.35); }
 @media (min-width: 900px) {
   .install-banner { bottom: 100px; }
-  .app { max-width: 1100px; padding: 20px 20px 120px; }
+  .app { max-width: 1060px; padding: 20px 24px 120px; }
   #screen-home.active {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -232,11 +234,18 @@ nav.bottom .inner {
   #screen-gpu.active { max-width: 780px; margin: 0 auto; }
   #screen-system.active, #screen-settings.active {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
     align-items: start;
   }
   #screen-system > .card, #screen-settings > .card { margin: 0 !important; }
+  .gauge-wrap { width: 152px; height: 152px; }
+  .gauge-center b { font-size: 32px; }
+  .gauge-label { font-size: 14px; }
+  .gauge-sub { font-size: 12px; }
+  .mini .k { font-size: 11px; }
+  .mini .v { font-size: 19px; }
+  #screen-home.active { gap: 14px; }
   nav.bottom { left: 50%; right: auto; bottom: 18px; transform: translateX(-50%); }
   nav.bottom .inner { max-width: none; width: 540px; border: 1px solid var(--line); border-radius: 18px; padding: 8px 12px; }
 }
@@ -442,6 +451,7 @@ nav.bottom .inner {
         <div class="list-item"><span class="muted">Güç</span><b id="sys-gpu-power">—</b></div>
         <div class="list-item"><span class="muted">Frekans</span><b id="sys-gpu-freq">—</b></div>
       </div>
+      <div class="list" id="sys-gpu-extra" style="margin-top:10px"></div>
     </div>
     <div class="card">
       <div class="card-title">
@@ -726,6 +736,12 @@ function render(d) {
   $("sys-gpu-vram").textContent = vramText;
   $("sys-gpu-power").textContent = fmt(gpu && gpu.power_w, " W", 0);
   $("sys-gpu-freq").textContent = ghz(gpu && gpu.freq_mhz, 1);
+  const gpuOthers = (Array.isArray(d.gpus) ? d.gpus : []).filter((g) => !gpu || g.name !== gpu.name);
+  $("sys-gpu-extra").innerHTML = gpuOthers.map((g) =>
+    '<div class="gpu-row"><span class="gpu-dot" style="background:#33456f"></span>' +
+    '<span class="gpu-name">' + escapeHtml(g.name || dash) + '</span>' +
+    '<span class="gpu-meta">Aktif değil</span></div>'
+  ).join("");
 
   const fans = Array.isArray(d.fans) ? d.fans : [];
   $("sys-fans").innerHTML = fans.length
@@ -962,8 +978,7 @@ async function refreshCharts() {
 
 function fmtClock(ts) {
   const d = new Date(ts);
-  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") +
-    ":" + String(d.getSeconds()).padStart(2, "0");
+  return String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
 }
 
 function roundRect(ctx, x, y, w, h, r) {

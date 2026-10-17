@@ -60,7 +60,8 @@ def test_long_ranges_use_minute_buffer():
         h.record(float(i), {"ts": float(i), "v": float(i)})
     assert len(h.series(60)) == 121
     long_series = h.series(120)
-    assert 2 <= len(long_series) <= 3
+    assert 2 <= len(long_series) <= 4
+    assert long_series[-1]["ts"] == 120
     assert all("v" in sample for sample in long_series)
 
 
