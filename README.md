@@ -14,7 +14,7 @@ PC'nin canlı sistem istatistiklerini (CPU/GPU kullanımı ve sıcaklığı, RAM
 | Fanlar | Fan devirleri (anakart destekliyorsa, best-effort) |
 | Oyun FPS | Ön plandaki uygulamanın anlık FPS değeri |
 
-Ayrıca **Grafikler** sekmesi son 1 saatin geçmişini gösterir (1dk/5dk/15dk/1sa; CPU/GPU/RAM/Disk). Değerler 0.1 saniyede bir güncellenir (10 Hz). Okunamayan bir değer `—` olarak görünür.
+Ayrıca **Grafikler** sekmesi geçmişi gösterir (10dk/1sa/12sa/48sa; CPU/GPU/RAM/Disk; uzun aralıklar dakikalık ortalamalarla). Değerler 0.1 saniyede bir güncellenir (10 Hz). Okunamayan bir değer `—` olarak görünür.
 
 ## Gereksinimler
 

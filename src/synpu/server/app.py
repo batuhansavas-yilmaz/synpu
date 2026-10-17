@@ -58,7 +58,7 @@ def create_app(collector, push_interval: float = config.PUSH_INTERVAL_S,
 
     @app.get("/api/history")
     def history(minutes: int = 60):
-        minutes = min(max(minutes, 1), 60)
+        minutes = min(max(minutes, 1), 2880)
         history_buffer = getattr(collector, "history", None)
         samples = history_buffer.series(minutes) if history_buffer is not None else []
         return {"minutes": minutes, "samples": samples}

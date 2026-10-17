@@ -53,11 +53,27 @@ def test_scan_collects_cpu_fans_and_disks():
     superio = FakeHardware("SuperIO", "Nuvoton", [FakeSensor("Fan", "CPU Fan", 1200.0)])
     board = FakeHardware("Motherboard", "Board", [], subs=[superio])
     ssd = FakeHardware("Storage", "Samsung SSD", [FakeSensor("Temperature", "Temperature", 38.0)])
-    reading = _scan_computer(FakeComputer([cpu, board, ssd]))
+    gpu = FakeHardware("GpuNvidia", "RTX Test", [
+        FakeSensor("Load", "GPU Core", 33.0),
+        FakeSensor("Temperature", "GPU Core", 55.0),
+        FakeSensor("Power", "GPU Package", 120.0),
+        FakeSensor("Clock", "GPU Core", 2500.0),
+        FakeSensor("SmallData", "GPU Memory Used", 2048.0),
+        FakeSensor("SmallData", "GPU Memory Total", 8192.0),
+    ])
+    reading = _scan_computer(FakeComputer([cpu, board, ssd, gpu]))
     assert reading.cpu_temp == 45.0
     assert reading.fans == (("CPU Fan", 1200.0),)
     assert reading.disk_temps == (("Samsung SSD", 38.0),)
     assert reading.cpu_clock_mhz == 4300.0
+    assert len(reading.gpus) == 1
+    assert reading.gpus[0].name == "RTX Test"
+    assert reading.gpus[0].usage_pct == 33.0
+    assert reading.gpus[0].temp_c == 55.0
+    assert reading.gpus[0].power_w == 120.0
+    assert reading.gpus[0].freq_mhz == 2500.0
+    assert reading.gpus[0].vram_used_mb == 2048
+    assert reading.gpus[0].vram_total_mb == 8192
 
 
 def test_read_falls_back_to_wmi(monkeypatch):

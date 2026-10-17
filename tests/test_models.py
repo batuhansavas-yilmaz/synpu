@@ -15,4 +15,5 @@ def test_snapshot_to_dict_nullable_gpu_and_fps():
                  "fps": {"app": None, "value": None},
                  "disks": [],
                  "net": None,
-                 "fans": []}
+                 "fans": [],
+                 "gpus": []}

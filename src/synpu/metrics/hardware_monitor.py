@@ -4,6 +4,8 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from synpu.metrics.models import GpuStats
+
 LHM_DLL = Path(__file__).resolve().parents[3] / "third_party" / "lhm" / "LibreHardwareMonitorLib.dll"
 
 WMI_COMMAND = (
@@ -21,6 +23,7 @@ class HardwareReading:
     fans: tuple[tuple[str, float], ...] = ()
     disk_temps: tuple[tuple[str, float], ...] = ()
     cpu_clock_mhz: float | None = None
+    gpus: tuple[GpuStats, ...] = ()
 
 
 def pick_cpu_temp(sensors: list[tuple[str, float]]) -> float | None:
@@ -38,6 +41,45 @@ def _scan_computer(computer) -> HardwareReading:
     cpu_clocks: list[float] = []
     fans: list[tuple[str, float]] = []
     disks: list[tuple[str, float]] = []
+    gpus: list[GpuStats] = []
+
+    def scan_gpu(hardware) -> GpuStats:
+        usage = None
+        temp = None
+        power = None
+        freq = None
+        vram_used = None
+        vram_total = None
+        fallback_usage = None
+        for sensor in hardware.Sensors:
+            sensor_type = str(sensor.SensorType)
+            sensor_name = str(sensor.Name)
+            value = sensor.Value
+            if value is None:
+                continue
+            if sensor_type == "Load" and sensor_name == "GPU Core":
+                usage = float(value)
+            elif sensor_type == "Load" and sensor_name == "D3D 3D" and fallback_usage is None:
+                fallback_usage = float(value)
+            elif sensor_type == "Temperature" and sensor_name == "GPU Core":
+                temp = float(value)
+            elif sensor_type == "Power" and sensor_name == "GPU Package":
+                power = float(value)
+            elif sensor_type == "Clock" and sensor_name == "GPU Core":
+                freq = float(value)
+            elif sensor_type == "SmallData" and sensor_name == "GPU Memory Used":
+                vram_used = int(value)
+            elif sensor_type == "SmallData" and sensor_name == "GPU Memory Total":
+                vram_total = int(value)
+        return GpuStats(
+            name=str(hardware.Name),
+            usage_pct=usage if usage is not None else fallback_usage,
+            temp_c=temp,
+            vram_used_mb=vram_used,
+            vram_total_mb=vram_total,
+            power_w=power,
+            freq_mhz=freq,
+        )
 
     def visit(hardware, depth=0):
         hardware_type = str(hardware.HardwareType)
@@ -57,6 +99,8 @@ def _scan_computer(computer) -> HardwareReading:
             for sensor in hardware.Sensors:
                 if str(sensor.SensorType) == "Temperature" and sensor.Value is not None:
                     disks.append((str(hardware.Name), float(sensor.Value)))
+        elif hardware_type in ("GpuNvidia", "GpuAmd", "GpuIntel"):
+            gpus.append(scan_gpu(hardware))
         for sensor in hardware.Sensors:
             if str(sensor.SensorType) == "Fan" and sensor.Value is not None:
                 fans.append((str(sensor.Name), float(sensor.Value)))
@@ -72,6 +116,7 @@ def _scan_computer(computer) -> HardwareReading:
         fans=tuple(fans),
         disk_temps=tuple(disks),
         cpu_clock_mhz=float(clock) if clock is not None else None,
+        gpus=tuple(gpus),
     )
 
 
@@ -124,6 +169,7 @@ class CpuTempReader:
         computer.IsCpuEnabled = True
         computer.IsMotherboardEnabled = True
         computer.IsStorageEnabled = True
+        computer.IsGpuEnabled = True
         computer.Open()
         self._computer = computer
         return computer

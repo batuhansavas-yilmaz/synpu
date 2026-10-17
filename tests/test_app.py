@@ -81,8 +81,8 @@ def test_version_endpoint(client):
 
 
 def test_history_minutes_clamped(client):
-    d = client.get("/api/history?minutes=999").json()
-    assert d["minutes"] == 60
+    d = client.get("/api/history?minutes=9999").json()
+    assert d["minutes"] == 2880
 
 
 def test_ws_pushes_snapshot(client):

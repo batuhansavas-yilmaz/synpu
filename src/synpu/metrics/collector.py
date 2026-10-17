@@ -1,3 +1,4 @@
+import re
 import socket
 import threading
 import time
@@ -5,7 +6,46 @@ from dataclasses import replace
 
 from synpu.metrics.hardware_monitor import HardwareReading
 from synpu.metrics.history import HistoryBuffer
-from synpu.metrics.models import CpuStats, FanStat, FpsStats, Snapshot
+from synpu.metrics.models import CpuStats, FanStat, FpsStats, GpuStats, Snapshot
+
+
+def _normalize_gpu_name(name: str | None) -> str:
+    return re.sub(r"[^a-z0-9]", "", (name or "").lower())
+
+
+def collect_gpu_candidates(primary: GpuStats | None, extras: tuple[GpuStats, ...]) -> list[GpuStats]:
+    candidates: list[GpuStats] = []
+    primary_name = _normalize_gpu_name(primary.name) if primary is not None else ""
+    if primary is not None:
+        candidates.append(primary)
+    for extra in extras or ():
+        if primary is not None and _normalize_gpu_name(extra.name) == primary_name:
+            candidates[0] = replace(
+                primary,
+                usage_pct=primary.usage_pct if primary.usage_pct is not None else extra.usage_pct,
+                temp_c=primary.temp_c if primary.temp_c is not None else extra.temp_c,
+                freq_mhz=primary.freq_mhz if primary.freq_mhz is not None else extra.freq_mhz,
+                power_w=primary.power_w if primary.power_w is not None else extra.power_w,
+                vram_used_mb=primary.vram_used_mb if primary.vram_used_mb is not None else extra.vram_used_mb,
+                vram_total_mb=primary.vram_total_mb if primary.vram_total_mb is not None else extra.vram_total_mb,
+            )
+            continue
+        candidates.append(extra)
+    return candidates
+
+
+def pick_active_gpu(primary: GpuStats | None, extras: tuple[GpuStats, ...]) -> GpuStats | None:
+    candidates = collect_gpu_candidates(primary, extras)
+    if not candidates:
+        return None
+
+    def score(gpu: GpuStats) -> float:
+        return gpu.usage_pct if gpu.usage_pct is not None else -1.0
+
+    best = max(candidates, key=score)
+    if score(best) <= 0:
+        return candidates[0]
+    return best
 
 
 class MetricsCollector:
@@ -55,6 +95,12 @@ class MetricsCollector:
             gpu = self._gpu_source()
         except Exception:
             gpu = None
+        gpu_candidates: list[GpuStats] = []
+        try:
+            gpu_candidates = collect_gpu_candidates(gpu, hw.gpus)
+            gpu = pick_active_gpu(gpu, hw.gpus)
+        except Exception:
+            gpu_candidates = [gpu] if gpu is not None else []
         try:
             ram = self._ram_source()
         except Exception:
@@ -107,6 +153,7 @@ class MetricsCollector:
             disks=storage,
             net=net,
             fans=fans,
+            gpus=gpu_candidates,
         )
         self._cached = snapshot.to_dict()
         self._cached_at = now

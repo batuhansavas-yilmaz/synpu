@@ -66,6 +66,7 @@ class Snapshot:
     disks: list[StorageStats] = field(default_factory=list)
     net: NetStats | None = None
     fans: list[FanStat] = field(default_factory=list)
+    gpus: list[GpuStats] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return asdict(self)

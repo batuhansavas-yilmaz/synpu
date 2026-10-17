@@ -23,3 +23,22 @@ def test_series_downsampled():
     for i in range(600):
         h.record(float(i), {"ts": float(i), "v": i})
     assert len(h.series(60, max_points=100)) <= 100
+
+
+def test_long_ranges_use_minute_buffer():
+    h = HistoryBuffer(interval=0.0)
+    for i in range(121):
+        h.record(float(i), {"ts": float(i), "v": float(i)})
+    assert len(h.series(60)) == 121
+    long_series = h.series(120)
+    assert 2 <= len(long_series) <= 3
+    assert all("v" in sample for sample in long_series)
+
+
+def test_long_range_falls_back_to_raw_until_minute_buffer_fills():
+    h = HistoryBuffer(interval=0.0)
+    for i in range(30):
+        h.record(float(i), {"ts": float(i), "v": float(i)})
+    assert len(h.series(720)) == 30
+
+

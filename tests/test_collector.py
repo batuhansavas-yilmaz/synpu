@@ -1,4 +1,4 @@
-from synpu.metrics.collector import MetricsCollector
+from synpu.metrics.collector import MetricsCollector, collect_gpu_candidates, pick_active_gpu
 from synpu.metrics.hardware_monitor import HardwareReading
 from synpu.metrics.models import CpuStats, FpsStats, GpuStats, NetStats, RamStats, StorageStats
 
@@ -19,7 +19,7 @@ class FakeNet:
         return NetStats(down_bps=1_000_000.0, up_bps=200_000.0)
 
 
-def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None):
+def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None, gpus=()):
     clock = clock or FakeClock()
     counters = counters if counters is not None else {}
 
@@ -53,6 +53,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
             fans=(("CPU Fan", 1200.0), ("Ağ Fan", 800.0)),
             disk_temps=(("Samsung SSD", 38.0),),
             cpu_clock_mhz=4300.0,
+            gpus=tuple(gpus),
         )
 
     def storage():
@@ -95,6 +96,7 @@ def test_snapshot_schema_and_hostname():
         {"name": "CPU Fan", "rpm": 1200.0},
         {"name": "Ağ Fan", "rpm": 800.0},
     ]
+    assert [g["name"] for g in d["gpus"]] == ["RTX 4070 SUPER"]
 
 
 def test_snapshot_cached_within_ttl():
@@ -133,6 +135,38 @@ def test_disk_temp_smart_fallback():
     d = col.snapshot()
     assert d["disks"][0]["temp_c"] == 38.0
     assert d["disks"][1]["temp_c"] == 33.0
+
+
+def test_dual_gpu_both_listed_and_active_is_busiest():
+    intel = GpuStats("Intel(R) UHD Graphics 770", 40.0, 45.0, 128, 1024, None, 1550.0)
+    col, _, _ = _collector(gpus=(intel,))
+    d = col.snapshot()
+    assert [g["name"] for g in d["gpus"]] == ["RTX 4070 SUPER", "Intel(R) UHD Graphics 770"]
+    assert d["gpu"]["name"] == "Intel(R) UHD Graphics 770"
+
+
+def test_pick_active_prefers_busier_gpu():
+    nv = GpuStats("RTX", 70.0, 60.0, 100, 1000, 100.0, 2500.0)
+    ig = GpuStats("Intel", 5.0, 40.0, 50, 500, None, 1200.0)
+    assert pick_active_gpu(nv, (ig,)).name == "RTX"
+    idle = GpuStats("RTX", 0.0, None, None, None, None, None)
+    busy = GpuStats("Intel", 12.0, None, None, None, None, None)
+    assert pick_active_gpu(idle, (busy,)).name == "Intel"
+
+
+def test_pick_active_merges_duplicate_names():
+    nv = GpuStats("NVIDIA GeForce RTX 4070 SUPER", None, 40.0, 100, 1000, None, None)
+    duplicate = GpuStats("NVIDIA GeForce RTX 4070 SUPER", 30.0, 41.0, 200, 1000, 50.0, 2500.0)
+    merged = pick_active_gpu(nv, (duplicate,))
+    assert merged.usage_pct == 30.0
+    assert merged.temp_c == 40.0
+    assert merged.freq_mhz == 2500.0
+
+
+def test_pick_active_none_cases():
+    assert pick_active_gpu(None, ()) is None
+    intel = GpuStats("Intel", 8.0, None, None, None, None, None)
+    assert pick_active_gpu(None, (intel,)).name == "Intel"
 
 
 def test_history_records_samples():
