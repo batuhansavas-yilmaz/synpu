@@ -57,7 +57,7 @@ class MetricsCollector:
                  ram_info_source=None, history_path=None,
                  battery_source=None, uptime_source=None,
                  disk_io_source=None, disk_map_source=None, display_source=None,
-                 motherboard_source=None):
+                 motherboard_source=None, top_source=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -76,6 +76,7 @@ class MetricsCollector:
         self._disk_map_source = disk_map_source
         self._display_source = display_source
         self._motherboard_source = motherboard_source
+        self._top_source = top_source
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
@@ -214,6 +215,12 @@ class MetricsCollector:
                 motherboard = self._motherboard_source()
             except Exception:
                 motherboard = None
+        top = None
+        if self._top_source is not None:
+            try:
+                top = self._top_source()
+            except Exception:
+                top = None
 
         snapshot = Snapshot(
             hostname=self._hostname,
@@ -230,6 +237,7 @@ class MetricsCollector:
             uptime_s=uptime,
             display=display,
             motherboard=motherboard,
+            top=top,
         )
         self._cached = snapshot.to_dict()
         self._cached_at = now
@@ -265,6 +273,8 @@ class MetricsCollector:
             sample[f"disk_{key}_temp"] = disk.temp_c
             sample[f"disk_{key}_read"] = disk.read_bps
             sample[f"disk_{key}_write"] = disk.write_bps
+        for index, core_usage in enumerate(cpu.cores or ()):
+            sample[f"cpu_core_{index + 1}"] = core_usage
         for extra_gpu in gpu_candidates:
             key = re.sub(r"[^A-Za-z0-9]", "", str(extra_gpu.name or ""))
             if not key:

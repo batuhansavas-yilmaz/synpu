@@ -13,8 +13,8 @@ class FakeFreq:
 
 
 class FakePsutil:
-    def cpu_percent(self, interval=None):
-        return 12.5
+    def cpu_percent(self, interval=None, percpu=False):
+        return 12.5 if not percpu else [10.0, 15.0]
 
     def virtual_memory(self):
         return FakeVm()
@@ -27,6 +27,7 @@ def test_read_cpu():
     c = read_cpu(FakePsutil())
     assert c.usage_pct == 12.5 and c.temp_c is None
     assert c.freq_mhz == 4200.0
+    assert c.cores == (10.0, 15.0)
 
 
 def test_read_ram():

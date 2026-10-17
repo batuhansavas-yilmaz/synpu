@@ -25,6 +25,7 @@ from synpu.metrics.gpu import read_gpu
 from synpu.metrics.hardware_monitor import CpuTempReader
 from synpu.metrics.motherboard import MotherboardReader
 from synpu.metrics.net import NetSpeedMeter
+from synpu.metrics.processes import ProcessTopReader
 from synpu.metrics.ram import RamInfoReader, read_ram
 from synpu.metrics.smart import SmartTempReader
 from synpu.metrics.storage import read_disks
@@ -109,6 +110,7 @@ def main() -> None:
         disk_map_source=disk_map.read,
         display_source=DisplayInfoReader().read,
         motherboard_source=MotherboardReader().read,
+        top_source=ProcessTopReader().read,
         history_path=STATE_DIR / "history.json",
         ttl=config.PUSH_INTERVAL_S,
     )

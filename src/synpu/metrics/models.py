@@ -7,6 +7,7 @@ class CpuStats:
     temp_c: float | None
     freq_mhz: float | None = None
     name: str | None = None
+    cores: tuple[float, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -74,6 +75,18 @@ class MotherboardStats:
 
 
 @dataclass(frozen=True)
+class ProcessStats:
+    name: str | None = None
+    value: float | None = None
+
+
+@dataclass(frozen=True)
+class TopProcesses:
+    cpu: ProcessStats | None = None
+    ram: ProcessStats | None = None
+
+
+@dataclass(frozen=True)
 class FpsStats:
     app: str | None
     value: float | None
@@ -95,6 +108,7 @@ class Snapshot:
     uptime_s: int | None = None
     display: DisplayStats | None = None
     motherboard: MotherboardStats | None = None
+    top: TopProcesses | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)

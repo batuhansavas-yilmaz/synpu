@@ -9,7 +9,7 @@ def test_snapshot_to_dict_nullable_gpu_and_fps():
                  fps=FpsStats(app=None, value=None))
     d = s.to_dict()
     assert d == {"hostname": "pc", "timestamp": 1.5,
-                 "cpu": {"usage_pct": 10.0, "temp_c": None, "freq_mhz": None, "name": None},
+                 "cpu": {"usage_pct": 10.0, "temp_c": None, "freq_mhz": None, "name": None, "cores": None},
                  "gpu": None,
                  "ram": {"used_mb": 100, "total_mb": 200, "percent": 50.0,
                          "speed_mts": None, "mem_type": None, "module_count": None},
@@ -21,4 +21,5 @@ def test_snapshot_to_dict_nullable_gpu_and_fps():
                  "battery": None,
                  "uptime_s": None,
                  "display": None,
-                 "motherboard": None}
+                 "motherboard": None,
+                 "top": None}

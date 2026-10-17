@@ -1,7 +1,8 @@
 from synpu.metrics.collector import MetricsCollector, collect_gpu_candidates, pick_active_gpu
 from synpu.metrics.hardware_monitor import HardwareReading
 from synpu.metrics.models import (
-    BatteryStats, CpuStats, FpsStats, GpuStats, MotherboardStats, NetStats, RamStats, StorageStats,
+    BatteryStats, CpuStats, FpsStats, GpuStats, MotherboardStats, NetStats,
+    ProcessStats, RamStats, StorageStats, TopProcesses,
 )
 
 
@@ -23,7 +24,7 @@ class FakeNet:
 
 def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None, gpus=(), ram_info_source=None,
                battery_source=None, uptime_source=None, disk_io_source=None, disk_map_source=None, display_source=None,
-               motherboard_source=None):
+               motherboard_source=None, top_source=None):
     clock = clock or FakeClock()
     counters = counters if counters is not None else {}
 
@@ -32,7 +33,8 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
 
     def cpu():
         bump("cpu")
-        return CpuStats(usage_pct=10.0, temp_c=None, freq_mhz=4200.0, name="i5-13500")
+        return CpuStats(usage_pct=10.0, temp_c=None, freq_mhz=4200.0, name="i5-13500",
+                        cores=(50.0, 60.0))
 
     def gpu():
         bump("gpu")
@@ -79,6 +81,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
         disk_map_source=disk_map_source,
         display_source=display_source,
         motherboard_source=motherboard_source,
+        top_source=top_source,
     )
     return col, counters, clock
 
@@ -87,7 +90,8 @@ def test_snapshot_schema_and_hostname():
     col, _, _ = _collector()
     d = col.snapshot()
     assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps", "disks", "net", "fans", "gpus",
-                      "battery", "uptime_s", "display", "motherboard"}
+                      "battery", "uptime_s", "display", "motherboard", "top"}
+    assert d["cpu"]["cores"] == (50.0, 60.0)
     assert d["hostname"] == "pc"
     assert d["cpu"]["usage_pct"] == 10.0
     assert d["cpu"]["temp_c"] == 55.0
@@ -215,6 +219,18 @@ def test_motherboard():
     assert d["motherboard"] == {"vendor": "ASUS", "model": "PRIME B660M-K D4"}
 
 
+def test_top_processes():
+    col, _, _ = _collector(top_source=lambda: TopProcesses(
+        cpu=ProcessStats("chrome.exe", 12.5),
+        ram=ProcessStats("chrome.exe", 800.0),
+    ))
+    d = col.snapshot()
+    assert d["top"] == {
+        "cpu": {"name": "chrome.exe", "value": 12.5},
+        "ram": {"name": "chrome.exe", "value": 800.0},
+    }
+
+
 def test_pick_active_none_cases():
     assert pick_active_gpu(None, ()) is None
     intel = GpuStats("Intel", 8.0, None, None, None, None, None)
@@ -236,4 +252,6 @@ def test_history_records_samples():
     assert samples[0]["disk_C_percent"] == 25.0
     assert samples[0]["disk_D_percent"] == 25.0
     assert samples[0]["disk_C_temp"] == 38.0
+    assert samples[0]["cpu_core_1"] == 50.0
+    assert samples[0]["cpu_core_2"] == 60.0
     assert samples[0]["disk_temp"] == 38.0

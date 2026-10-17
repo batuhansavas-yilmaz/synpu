@@ -52,4 +52,11 @@ def read_cpu(psutil_mod=psutil) -> CpuStats:
             freq = float(info.current)
     except Exception:
         freq = None
-    return CpuStats(usage_pct=usage, temp_c=None, freq_mhz=freq, name=cpu_name())
+    cores = None
+    try:
+        percpu = psutil_mod.cpu_percent(interval=None, percpu=True)
+        if percpu:
+            cores = tuple(float(value) for value in percpu)
+    except Exception:
+        cores = None
+    return CpuStats(usage_pct=usage, temp_c=None, freq_mhz=freq, name=cpu_name(), cores=cores)
