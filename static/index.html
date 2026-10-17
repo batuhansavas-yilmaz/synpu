@@ -134,6 +134,20 @@ nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-templa
 .install-btn { background: var(--blue); border: 0; color: #fff; border-radius: 10px; padding: 8px 12px;
   font-size: 12px; font-weight: 700; cursor: pointer; }
 .install-x { background: transparent; border: 0; color: var(--muted); font-size: 14px; cursor: pointer; padding: 4px; }
+.modal-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(4, 8, 18, 0.65);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: flex; align-items: flex-start;
+  justify-content: center; padding: 70px 16px 16px; }
+.modal-backdrop[hidden] { display: none; }
+.modal { width: min(420px, 100%); padding: 16px; border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)), rgba(10, 16, 30, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.50); }
+.input { width: 100%; margin-top: 10px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--text); border-radius: 12px; padding: 10px 12px; font-size: 14px; outline: none; }
+.input:focus { border-color: #4f7cff; }
+.modal-actions { display: flex; gap: 8px; margin-top: 12px; }
+.modal-actions .btn { flex: 1; }
+.scan-wrap { margin-top: 10px; border-radius: 12px; overflow: hidden; background: #000; }
+.scan-wrap video { width: 100%; display: block; }
 html { background: #081120; }
 body {
   background:
@@ -468,6 +482,21 @@ nav.bottom .inner {
   </div>
   <button class="install-btn" id="install-add" type="button">Ekle</button>
   <button class="install-x" id="install-close" type="button" aria-label="Kapat">✕</button>
+</div>
+
+<div class="modal-backdrop" id="add-modal" hidden>
+  <div class="modal">
+    <div class="card-title" style="margin:0">PC ekle</div>
+    <input class="input" id="add-url" type="url" inputmode="url" autocomplete="off"
+           placeholder="http://192.168.1.50:8787">
+    <div class="scan-wrap" id="scan-wrap" hidden><video id="scan-video" playsinline muted></video></div>
+    <div class="muted" id="add-hint" style="margin-top:8px"></div>
+    <div class="modal-actions">
+      <button class="btn" id="add-scan" type="button">QR Okut</button>
+      <button class="btn accent" id="add-confirm" type="button">Ekle</button>
+    </div>
+    <button class="btn" id="add-cancel" type="button" style="width:100%;margin-top:8px">Vazgeç</button>
+  </div>
 </div>
 
 <nav class="bottom">
@@ -971,20 +1000,78 @@ document.querySelectorAll("#range-pills .pill").forEach((btn) => {
 
 $("gpu-gauge-card").addEventListener("click", () => setScreen("gpu"));
 
-$("add-pc").addEventListener("click", () => {
-  const input = prompt("Diğer PC adresi (örn: http://192.168.1.50:8787)");
-  if (!input) return;
-  let url = input.trim().replace(/\/+$/, "");
+let scanStream = null;
+let scanLoop = null;
+
+function stopScan() {
+  if (scanLoop) { clearInterval(scanLoop); scanLoop = null; }
+  if (scanStream) {
+    scanStream.getTracks().forEach((track) => track.stop());
+    scanStream = null;
+  }
+  $("scan-wrap").hidden = true;
+}
+
+function closeAddModal() {
+  stopScan();
+  $("add-modal").hidden = true;
+  $("add-hint").textContent = "";
+}
+
+function addPcFromUrl(raw) {
+  let url = String(raw || "").trim().replace(/\/+$/, "");
+  if (!url) return;
   if (!/^https?:\/\//i.test(url)) url = "http://" + url;
   let name;
-  try { name = new URL(url).hostname; } catch (e) { alert("Geçersiz adres"); return; }
+  try { name = new URL(url).hostname; } catch (e) { $("add-hint").textContent = "Geçersiz adres."; return; }
   const existing = pcs.findIndex((p) => p.url === url);
+  closeAddModal();
   if (existing >= 0) { activate(existing); setScreen("home"); return; }
   pcs.push({ name: name, url: url });
   savePcs();
   activate(pcs.length - 1);
   setScreen("home");
+}
+
+async function startScan() {
+  $("add-hint").textContent = "";
+  if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !("BarcodeDetector" in window)) {
+    $("add-hint").textContent = "Bu adreste (HTTP) tarayıcı kameraya izin vermiyor. Telefonun kamera uygulamasıyla diğer PC'nin QR'ını okut, açılan adresi buraya yaz.";
+    return;
+  }
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+    const video = $("scan-video");
+    video.srcObject = scanStream;
+    await video.play();
+    $("scan-wrap").hidden = false;
+    const detector = new BarcodeDetector({ formats: ["qr_code"] });
+    scanLoop = setInterval(async () => {
+      try {
+        const codes = await detector.detect(video);
+        if (codes.length && codes[0].rawValue) {
+          $("add-url").value = codes[0].rawValue;
+          stopScan();
+          $("add-hint").textContent = "QR okundu.";
+        }
+      } catch (e) {}
+    }, 350);
+  } catch (e) {
+    $("add-hint").textContent = "Kamera açılamadı: " + (e && e.message ? e.message : "izin verilmedi");
+  }
+}
+
+$("add-pc").addEventListener("click", () => {
+  $("add-url").value = "";
+  $("add-hint").textContent = "";
+  $("add-modal").hidden = false;
+  setTimeout(() => $("add-url").focus(), 50);
 });
+$("add-cancel").addEventListener("click", closeAddModal);
+$("add-scan").addEventListener("click", startScan);
+$("add-confirm").addEventListener("click", () => addPcFromUrl($("add-url").value));
+$("add-url").addEventListener("keydown", (ev) => { if (ev.key === "Enter") addPcFromUrl($("add-url").value); });
+$("add-modal").addEventListener("click", (ev) => { if (ev.target === $("add-modal")) closeAddModal(); });
 
 renderSettings();
 activate(active);
