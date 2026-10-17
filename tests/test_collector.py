@@ -19,7 +19,7 @@ class FakeNet:
         return NetStats(down_bps=1_000_000.0, up_bps=200_000.0)
 
 
-def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None, gpus=()):
+def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None, gpus=(), ram_info_source=None):
     clock = clock or FakeClock()
     counters = counters if counters is not None else {}
 
@@ -68,6 +68,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
         hostname="pc", ttl=1.0, clock=clock,
         storage_source=storage, net_meter=FakeNet(),
         disk_temp_source=disk_temp_source,
+        ram_info_source=ram_info_source,
     )
     return col, counters, clock
 
@@ -161,6 +162,14 @@ def test_pick_active_merges_duplicate_names():
     assert merged.usage_pct == 30.0
     assert merged.temp_c == 40.0
     assert merged.freq_mhz == 2500.0
+
+
+def test_ram_info_enrichment():
+    col, _, _ = _collector(ram_info_source=lambda: {"speed_mts": 6000, "mem_type": "DDR5", "module_count": 2})
+    d = col.snapshot()
+    assert d["ram"]["speed_mts"] == 6000
+    assert d["ram"]["mem_type"] == "DDR5"
+    assert d["ram"]["module_count"] == 2
 
 
 def test_pick_active_none_cases():

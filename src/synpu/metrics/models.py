@@ -25,6 +25,9 @@ class RamStats:
     used_mb: int
     total_mb: int
     percent: float
+    speed_mts: int | None = None
+    mem_type: str | None = None
+    module_count: int | None = None
 
 
 @dataclass(frozen=True)

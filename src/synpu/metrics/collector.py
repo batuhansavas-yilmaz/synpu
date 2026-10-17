@@ -52,7 +52,7 @@ class MetricsCollector:
     def __init__(self, cpu_source, gpu_source, ram_source, fps_source, hw_reader,
                  hostname=None, ttl=1.0, clock=time.monotonic,
                  storage_source=None, net_meter=None, disk_temp_source=None,
-                 history_path=None):
+                 ram_info_source=None, history_path=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -64,6 +64,7 @@ class MetricsCollector:
         self._storage_source = storage_source
         self._net_meter = net_meter
         self._disk_temp_source = disk_temp_source
+        self._ram_info_source = ram_info_source
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
@@ -106,6 +107,18 @@ class MetricsCollector:
             ram = self._ram_source()
         except Exception:
             ram = None
+        if ram is not None and self._ram_info_source is not None:
+            try:
+                ram_info = self._ram_info_source() or {}
+            except Exception:
+                ram_info = {}
+            if ram_info:
+                ram = replace(
+                    ram,
+                    speed_mts=ram_info.get("speed_mts"),
+                    mem_type=ram_info.get("mem_type"),
+                    module_count=ram_info.get("module_count"),
+                )
         try:
             fps = self._fps_source(now)
         except Exception:

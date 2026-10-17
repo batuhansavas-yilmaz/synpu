@@ -1,5 +1,5 @@
 from synpu.metrics.cpu import read_cpu, short_cpu_name
-from synpu.metrics.ram import read_ram
+from synpu.metrics.ram import parse_ram_info, read_ram
 
 
 class FakeVm:
@@ -32,6 +32,24 @@ def test_read_cpu():
 def test_read_ram():
     r = read_ram(FakePsutil())
     assert (r.used_mb, r.total_mb, r.percent) == (100, 400, 25.0)
+
+
+def test_parse_ram_info_two_ddr5_modules():
+    payload = [
+        {"Capacity": 17179869184, "Speed": 6000, "ConfiguredClockSpeed": 6000, "SMBIOSMemoryType": 34},
+        {"Capacity": 17179869184, "Speed": 6000, "ConfiguredClockSpeed": 6000, "SMBIOSMemoryType": 34},
+    ]
+    info = parse_ram_info(payload)
+    assert info == {"speed_mts": 6000, "mem_type": "DDR5", "module_count": 2}
+
+
+def test_parse_ram_info_single_dict_and_nominal_speed():
+    info = parse_ram_info({"Capacity": 8589934592, "Speed": 3200, "ConfiguredClockSpeed": 0, "SMBIOSMemoryType": 26})
+    assert info == {"speed_mts": 3200, "mem_type": "DDR4", "module_count": 1}
+
+
+def test_parse_ram_info_empty():
+    assert parse_ram_info([]) is None
 
 
 def test_short_cpu_name_intel():

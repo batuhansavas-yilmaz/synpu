@@ -360,6 +360,9 @@ nav.bottom .inner {
         <span class="muted" id="val-ram-used">—</span>
         <span class="muted" id="home-ram-total">—</span>
       </div>
+      <div class="row-between" style="margin-top:5px">
+        <span class="muted">Hız</span><b id="home-ram-speed" style="font-variant-numeric:tabular-nums">—</b>
+      </div>
     </div>
 
     <div class="card">
@@ -589,7 +592,7 @@ function clearValues() {
    "val-gpu-temp", "val-gpu-usage", "val-gpu-power", "val-gpu-freq", "val-cpu-freq",
    "val-ram-pct", "val-ram-used", "val-fps-app", "val-fps-value",
    "val-net-down", "val-net-up", "home-cpu-name", "home-gpu-name",
-   "home-ram-total",
+   "home-ram-total", "home-ram-speed",
    "gd-name", "gd-usage"].forEach((id) => { const el = $(id); if (el) el.textContent = dash; });
   setRing("ring-cpu", null); setRing("ring-gpu", null); setRing("ring-gpu-detail", null);
   setBar("home-ram-bar", 0);
@@ -632,6 +635,10 @@ function render(d) {
   $("val-ram-pct").textContent = fmt(ram && ram.percent, "%", 0);
   $("val-ram-used").textContent = ram ? gb(ram.used_mb) + " / " + Math.round(ram.total_mb / 1024) + " GB" : dash;
   $("home-ram-total").textContent = ram ? Math.round(ram.percent) + "%" : dash;
+  $("home-ram-speed").textContent = ram && ram.speed_mts
+    ? (ram.mem_type ? ram.mem_type + " " : "") + ram.speed_mts + " MT/s" +
+      (ram.module_count ? " \u00b7 " + ram.module_count + " modül" : "")
+    : dash;
   setBar("home-ram-bar", ram && ram.percent);
 
   renderDisks("home-disks", disks);

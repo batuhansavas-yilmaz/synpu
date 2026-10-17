@@ -20,7 +20,7 @@ from synpu.metrics.fps import FpsTracker, PresentMonSampler, foreground_pid
 from synpu.metrics.gpu import read_gpu
 from synpu.metrics.hardware_monitor import CpuTempReader
 from synpu.metrics.net import NetSpeedMeter
-from synpu.metrics.ram import read_ram
+from synpu.metrics.ram import RamInfoReader, read_ram
 from synpu.metrics.smart import SmartTempReader
 from synpu.metrics.storage import read_disks
 from synpu.net.addresses import primary_ip
@@ -90,6 +90,7 @@ def main() -> None:
         cpu_source=read_cpu,
         gpu_source=read_gpu,
         ram_source=read_ram,
+        ram_info_source=RamInfoReader().read,
         fps_source=lambda now: tracker.current(now, foreground_pid()),
         hw_reader=temp_reader.read,
         storage_source=read_disks,
