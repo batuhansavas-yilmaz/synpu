@@ -26,6 +26,7 @@ from synpu.metrics.storage import read_disks
 from synpu.net.addresses import primary_ip
 from synpu.server.app import create_app
 from synpu.ui.qr_window import run_ui
+from synpu.updates import background_loop as update_loop
 
 ROOT = Path(__file__).resolve().parents[2]
 PRESENTMON_EXE = ROOT / "third_party" / "presentmon" / "PresentMon.exe"
@@ -115,6 +116,7 @@ def main() -> None:
                 pass
 
     threading.Thread(target=sampling_loop, daemon=True).start()
+    threading.Thread(target=update_loop, daemon=True).start()
 
     try:
         run_ui(_url_provider, STATE_DIR, show_event=show_event)

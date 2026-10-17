@@ -55,6 +55,8 @@ Aynı uygulamayı diğer PC'lere de kur. Telefon sayfasındaki **"+ PC ekle"** d
 - **GPU değerleri `—`:** NVIDIA sürücüsü yok ya da kart NVIDIA değil.
 - **CPU sıcaklığı sabit/düşük görünüyor:** PawnIO sürücüsü eksikse Synpu ACPI bölge sıcaklığına düşer. `Get-Service PawnIO` ile kontrol et; kurulum betiği otomatik kurar. PawnIO'nun imzalı resmi sürümü Bellek Bütünlüğü (Çekirdek Yalıtımı) açıkken de çalışır.
 - **Adres değişti:** Modem PC'ye yeni IP verdiyse QR penceresindeki adres güncellenir; telefon sayfasındaki sekmeyi silip yeniden ekle.
+- **Telefon bağlanıyor ama sayfa açılmıyor:** Bazı modemlerde "AP isolation / istemci izolasyonu" açıktır; aynı Wi-Fi'deki cihazlar birbirine erişemez. Modem ayarlarından kapatılmalıdır.
+- **Güncelleme:** Synpu, GitHub'daki son sürümü 6 saatte bir kontrol eder; yeni sürüm varsa Ayarlar → Hakkında bölümünde indirme bağlantısı görünür.
 
 ## Kaldırma
 

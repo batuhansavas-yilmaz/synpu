@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from synpu import config
+from synpu.updates import update_info
 
 ORIGIN_REGEX = (
     r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|"
@@ -25,7 +26,7 @@ def is_allowed_origin(origin: str | None) -> bool:
 
 def create_app(collector, push_interval: float = config.PUSH_INTERVAL_S,
                static_dir: Path = DEFAULT_STATIC_DIR, on_show=None) -> FastAPI:
-    app = FastAPI()
+    app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
     app.add_middleware(
         CORSMiddleware,
@@ -50,6 +51,10 @@ def create_app(collector, push_interval: float = config.PUSH_INTERVAL_S,
             except Exception:
                 pass
         return {"ok": True}
+
+    @app.get("/api/version")
+    def version_info():
+        return update_info()
 
     @app.get("/api/history")
     def history(minutes: int = 60):

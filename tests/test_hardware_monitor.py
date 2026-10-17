@@ -44,7 +44,12 @@ def test_pick_returns_none_when_empty():
 
 
 def test_scan_collects_cpu_fans_and_disks():
-    cpu = FakeHardware("Cpu", "i5", [FakeSensor("Temperature", "CPU Package", 45.0)])
+    cpu = FakeHardware("Cpu", "i5", [
+        FakeSensor("Temperature", "CPU Package", 45.0),
+        FakeSensor("Clock", "P-Core #1", 4200.0),
+        FakeSensor("Clock", "P-Core #2", 4400.0),
+        FakeSensor("Clock", "Bus Speed", 100.0),
+    ])
     superio = FakeHardware("SuperIO", "Nuvoton", [FakeSensor("Fan", "CPU Fan", 1200.0)])
     board = FakeHardware("Motherboard", "Board", [], subs=[superio])
     ssd = FakeHardware("Storage", "Samsung SSD", [FakeSensor("Temperature", "Temperature", 38.0)])
@@ -52,6 +57,7 @@ def test_scan_collects_cpu_fans_and_disks():
     assert reading.cpu_temp == 45.0
     assert reading.fans == (("CPU Fan", 1200.0),)
     assert reading.disk_temps == (("Samsung SSD", 38.0),)
+    assert reading.cpu_clock_mhz == 4300.0
 
 
 def test_read_falls_back_to_wmi(monkeypatch):

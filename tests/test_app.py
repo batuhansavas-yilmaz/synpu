@@ -72,6 +72,14 @@ def test_history_endpoint(client):
     assert d["samples"] == [{"ts": 1.0, "cpu_usage": 10.0}]
 
 
+def test_version_endpoint(client):
+    r = client.get("/api/version")
+    assert r.status_code == 200
+    d = r.json()
+    assert "version" in d
+    assert d["update_available"] is False
+
+
 def test_history_minutes_clamped(client):
     d = client.get("/api/history?minutes=999").json()
     assert d["minutes"] == 60

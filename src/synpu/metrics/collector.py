@@ -48,6 +48,8 @@ class MetricsCollector:
             cpu = CpuStats(usage_pct=None, temp_c=None)
         if hw.cpu_temp is not None:
             cpu = replace(cpu, temp_c=hw.cpu_temp)
+        if hw.cpu_clock_mhz is not None:
+            cpu = replace(cpu, freq_mhz=hw.cpu_clock_mhz)
 
         try:
             gpu = self._gpu_source()

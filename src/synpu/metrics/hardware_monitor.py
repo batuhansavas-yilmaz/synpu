@@ -20,6 +20,7 @@ class HardwareReading:
     cpu_temp: float | None = None
     fans: tuple[tuple[str, float], ...] = ()
     disk_temps: tuple[tuple[str, float], ...] = ()
+    cpu_clock_mhz: float | None = None
 
 
 def pick_cpu_temp(sensors: list[tuple[str, float]]) -> float | None:
@@ -34,6 +35,7 @@ def pick_cpu_temp(sensors: list[tuple[str, float]]) -> float | None:
 
 def _scan_computer(computer) -> HardwareReading:
     cpu_sensors: list[tuple[str, float]] = []
+    cpu_clocks: list[float] = []
     fans: list[tuple[str, float]] = []
     disks: list[tuple[str, float]] = []
 
@@ -45,8 +47,12 @@ def _scan_computer(computer) -> HardwareReading:
             pass
         if hardware_type == "Cpu":
             for sensor in hardware.Sensors:
-                if str(sensor.SensorType) == "Temperature" and sensor.Value is not None:
+                sensor_type = str(sensor.SensorType)
+                if sensor_type == "Temperature" and sensor.Value is not None:
                     cpu_sensors.append((str(sensor.Name), float(sensor.Value)))
+                elif sensor_type == "Clock" and sensor.Value is not None:
+                    if "bus" not in str(sensor.Name).lower():
+                        cpu_clocks.append(float(sensor.Value))
         elif hardware_type == "Storage":
             for sensor in hardware.Sensors:
                 if str(sensor.SensorType) == "Temperature" and sensor.Value is not None:
@@ -60,10 +66,12 @@ def _scan_computer(computer) -> HardwareReading:
 
     for hardware in computer.Hardware:
         visit(hardware)
+    clock = round(sum(cpu_clocks) / len(cpu_clocks)) if cpu_clocks else None
     return HardwareReading(
         cpu_temp=pick_cpu_temp(cpu_sensors),
         fans=tuple(fans),
         disk_temps=tuple(disks),
+        cpu_clock_mhz=float(clock) if clock is not None else None,
     )
 
 

@@ -52,6 +52,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
             cpu_temp=55.0,
             fans=(("CPU Fan", 1200.0), ("Ağ Fan", 800.0)),
             disk_temps=(("Samsung SSD", 38.0),),
+            cpu_clock_mhz=4300.0,
         )
 
     def storage():
@@ -77,7 +78,7 @@ def test_snapshot_schema_and_hostname():
     assert d["hostname"] == "pc"
     assert d["cpu"]["usage_pct"] == 10.0
     assert d["cpu"]["temp_c"] == 55.0
-    assert d["cpu"]["freq_mhz"] == 4200.0
+    assert d["cpu"]["freq_mhz"] == 4300.0
     assert d["cpu"]["name"] == "i5-13500"
     assert d["gpu"]["name"] == "RTX 4070 SUPER"
     assert d["gpu"]["freq_mhz"] == 2610.0
