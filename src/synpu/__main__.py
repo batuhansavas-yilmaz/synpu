@@ -16,7 +16,7 @@ import uvicorn
 from synpu import config
 from synpu.metrics.collector import MetricsCollector
 from synpu.metrics.cpu import read_cpu
-from synpu.metrics.fps import FpsTracker, PresentMonSampler
+from synpu.metrics.fps import FpsTracker, PresentMonSampler, foreground_pid
 from synpu.metrics.gpu import read_gpu
 from synpu.metrics.hardware_monitor import CpuTempReader
 from synpu.metrics.ram import read_ram
@@ -86,7 +86,7 @@ def main() -> None:
         cpu_source=read_cpu,
         gpu_source=read_gpu,
         ram_source=read_ram,
-        fps_source=tracker.current,
+        fps_source=lambda now: tracker.current(now, foreground_pid()),
         temp_reader=temp_reader.read,
     )
 

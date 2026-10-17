@@ -1,4 +1,5 @@
 import csv
+import ctypes
 import io
 import subprocess
 import threading
@@ -8,13 +9,27 @@ from pathlib import Path
 from synpu.metrics.models import FpsStats
 
 
+def foreground_pid() -> int | None:
+    try:
+        user32 = ctypes.windll.user32
+        hwnd = user32.GetForegroundWindow()
+        if not hwnd:
+            return None
+        pid = ctypes.c_ulong()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        return int(pid.value) or None
+    except Exception:
+        return None
+
+
 class FpsTracker:
     def __init__(self, exclude_apps: frozenset[str], stale_s: float):
         self._exclude = {a.lower() for a in exclude_apps}
         self._stale_s = stale_s
         self._app_idx: int | None = None
         self._ms_idx: int | None = None
-        self._latest: dict[str, tuple[float, float]] = {}
+        self._pid_idx: int | None = None
+        self._latest: dict[str, tuple[float, float, int | None]] = {}
 
     def feed_line(self, line: str) -> None:
         try:
@@ -24,6 +39,7 @@ class FpsTracker:
         if "Application" in row and "MsBetweenPresents" in row:
             self._app_idx = row.index("Application")
             self._ms_idx = row.index("MsBetweenPresents")
+            self._pid_idx = row.index("ProcessID") if "ProcessID" in row else None
             return
         if self._app_idx is None or self._ms_idx is None:
             return
@@ -34,16 +50,24 @@ class FpsTracker:
             return
         if not app or ms <= 0:
             return
-        self._latest[app] = (time.monotonic(), ms)
+        pid = None
+        if self._pid_idx is not None:
+            try:
+                pid = int(row[self._pid_idx])
+            except (IndexError, ValueError):
+                pid = None
+        self._latest[app] = (time.monotonic(), ms, pid)
 
-    def current(self, now: float) -> FpsStats:
+    def current(self, now: float, foreground_pid: int | None = None) -> FpsStats:
         best: tuple[float, str, float] | None = None
         items = list(self._latest.items())
-        for app, (ts, ms) in items:
+        for app, (ts, ms, pid) in items:
             if now - ts > self._stale_s:
                 self._latest.pop(app, None)
                 continue
             if app.lower() in self._exclude:
+                continue
+            if foreground_pid is not None and pid != foreground_pid:
                 continue
             if best is None or ts > best[0]:
                 best = (ts, app, ms)
