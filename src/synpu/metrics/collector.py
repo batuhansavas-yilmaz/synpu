@@ -56,7 +56,8 @@ class MetricsCollector:
                  storage_source=None, net_meter=None, disk_temp_source=None,
                  ram_info_source=None, history_path=None,
                  battery_source=None, uptime_source=None,
-                 disk_io_source=None, disk_map_source=None, display_source=None):
+                 disk_io_source=None, disk_map_source=None, display_source=None,
+                 motherboard_source=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -74,6 +75,7 @@ class MetricsCollector:
         self._disk_io_source = disk_io_source
         self._disk_map_source = disk_map_source
         self._display_source = display_source
+        self._motherboard_source = motherboard_source
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
@@ -206,6 +208,12 @@ class MetricsCollector:
                     display = DisplayStats(refresh_hz=float(refresh_hz))
             except Exception:
                 display = None
+        motherboard = None
+        if self._motherboard_source is not None:
+            try:
+                motherboard = self._motherboard_source()
+            except Exception:
+                motherboard = None
 
         snapshot = Snapshot(
             hostname=self._hostname,
@@ -221,6 +229,7 @@ class MetricsCollector:
             battery=battery,
             uptime_s=uptime,
             display=display,
+            motherboard=motherboard,
         )
         self._cached = snapshot.to_dict()
         self._cached_at = now

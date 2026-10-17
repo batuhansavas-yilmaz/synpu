@@ -1,5 +1,6 @@
 from synpu.metrics.battery import read_battery
 from synpu.metrics.display import parse_refresh_rate
+from synpu.metrics.motherboard import parse_motherboard
 
 
 class FakeBattery:
@@ -30,3 +31,10 @@ def test_read_battery_none():
 def test_parse_refresh_rate():
     assert parse_refresh_rate([{"CurrentRefreshRate": 60}, {"CurrentRefreshRate": 144}]) == 144.0
     assert parse_refresh_rate({"CurrentRefreshRate": 0}) is None
+
+
+def test_parse_motherboard():
+    board = parse_motherboard({"Manufacturer": "ASUSTeK COMPUTER INC.", "Product": "PRIME B660M-K D4"})
+    assert board.vendor == "ASUSTeK COMPUTER INC."
+    assert board.model == "PRIME B660M-K D4"
+    assert parse_motherboard([]) is None

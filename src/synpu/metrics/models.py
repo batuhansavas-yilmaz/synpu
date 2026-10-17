@@ -68,6 +68,12 @@ class DisplayStats:
 
 
 @dataclass(frozen=True)
+class MotherboardStats:
+    vendor: str | None = None
+    model: str | None = None
+
+
+@dataclass(frozen=True)
 class FpsStats:
     app: str | None
     value: float | None
@@ -88,6 +94,7 @@ class Snapshot:
     battery: BatteryStats | None = None
     uptime_s: int | None = None
     display: DisplayStats | None = None
+    motherboard: MotherboardStats | None = None
 
     def to_dict(self) -> dict:
         return asdict(self)

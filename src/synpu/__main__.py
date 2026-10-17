@@ -23,6 +23,7 @@ from synpu.metrics.display import DisplayInfoReader
 from synpu.metrics.fps import FpsTracker, PresentMonSampler, foreground_pid
 from synpu.metrics.gpu import read_gpu
 from synpu.metrics.hardware_monitor import CpuTempReader
+from synpu.metrics.motherboard import MotherboardReader
 from synpu.metrics.net import NetSpeedMeter
 from synpu.metrics.ram import RamInfoReader, read_ram
 from synpu.metrics.smart import SmartTempReader
@@ -107,6 +108,7 @@ def main() -> None:
         disk_io_source=disk_meter.update,
         disk_map_source=disk_map.read,
         display_source=DisplayInfoReader().read,
+        motherboard_source=MotherboardReader().read,
         history_path=STATE_DIR / "history.json",
         ttl=config.PUSH_INTERVAL_S,
     )

@@ -20,4 +20,5 @@ def test_snapshot_to_dict_nullable_gpu_and_fps():
                  "gpus": [],
                  "battery": None,
                  "uptime_s": None,
-                 "display": None}
+                 "display": None,
+                 "motherboard": None}
