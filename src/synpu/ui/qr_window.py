@@ -74,6 +74,11 @@ def run_ui(url_provider: Callable[[], "str | None"], state_dir: Path,
         root._icon_photo = icon_photo
     except Exception:
         pass
+    ico_path = Path(__file__).resolve().parents[3] / "static" / "icon.ico"
+    try:
+        root.iconbitmap(default=str(ico_path))
+    except Exception:
+        pass
 
     header = tk.Frame(root, bg=BG)
     header.pack(fill="x", padx=20, pady=(18, 10))
@@ -175,7 +180,7 @@ def run_ui(url_provider: Callable[[], "str | None"], state_dir: Path,
 
     icon = pystray.Icon(
         "synpu",
-        _tray_image(),
+        _app_icon(64),
         "Synpu",
         menu=pystray.Menu(
             pystray.MenuItem("QR'ı Göster", lambda: show_window()),
