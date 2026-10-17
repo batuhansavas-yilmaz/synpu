@@ -82,7 +82,12 @@ def run_ui(url_provider: Callable[[], str], state_dir: Path) -> None:
             url = url_provider()
         except Exception:
             url = None
-        if url and url != state["url"]:
+        if not url:
+            state["url"] = None
+            qr_label.configure(image="")
+            qr_label.image = None
+            url_var.set("Ağ bekleniyor...")
+        elif url != state["url"]:
             state["url"] = url
             photo = ImageTk.PhotoImage(build_qr_image(url))
             qr_label.configure(image=photo)

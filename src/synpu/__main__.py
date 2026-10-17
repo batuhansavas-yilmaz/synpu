@@ -2,6 +2,7 @@ import os
 import socket
 import sys
 import threading
+import time
 from pathlib import Path
 
 HEADLESS = sys.stderr is None
@@ -25,13 +26,15 @@ from synpu.ui.qr_window import run_ui
 
 ROOT = Path(__file__).resolve().parents[2]
 PRESENTMON_EXE = ROOT / "third_party" / "presentmon" / "PresentMon.exe"
-STATE_DIR = Path.home() / "AppData" / "Local" / "Synpu"
+LOCALAPPDATA = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+STATE_DIR = Path(LOCALAPPDATA) / "Synpu"
 EXCLUDE_APPS = frozenset({
     "dwm.exe",
-    "application frame host",
+    "applicationframehost.exe",
     "explorer.exe",
     "searchhost.exe",
     "textinputhost.exe",
+    "shellexperiencehost.exe",
 })
 
 
@@ -42,6 +45,15 @@ def _port_in_use(port: int) -> bool:
             return False
         except OSError:
             return True
+
+
+def _wait_port_free(port: int, timeout: float = 8.0) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if not _port_in_use(port):
+            return True
+        time.sleep(0.5)
+    return not _port_in_use(port)
 
 
 def _fail(message: str) -> None:
@@ -58,7 +70,7 @@ def _fail(message: str) -> None:
 
 
 def main() -> None:
-    if _port_in_use(config.PORT):
+    if not _wait_port_free(config.PORT):
         _fail(
             f"Port {config.PORT} kullanımda — Synpu zaten çalışıyor olabilir.\n"
             f"Farklı port için SYNPU_PORT ortam değişkenini ayarlayın (örn. SYNPU_PORT=8788)."
@@ -87,9 +99,14 @@ def main() -> None:
     server.start()
 
     try:
-        run_ui(lambda: f"http://{primary_ip()}:{config.PORT}", STATE_DIR)
+        run_ui(_url_provider, STATE_DIR)
     finally:
         sampler.stop()
+
+
+def _url_provider() -> str | None:
+    ip = primary_ip()
+    return f"http://{ip}:{config.PORT}" if ip else None
 
 
 if __name__ == "__main__":

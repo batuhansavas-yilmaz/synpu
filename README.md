@@ -46,6 +46,7 @@ Aynı uygulamayı diğer PC'lere de kur. Telefon sayfasındaki **"+ PC ekle"** d
 - **Telefondan bağlanamıyorum:** Telefon ve PC aynı Wi-Fi'de mi? Ağ profilinin **Özel (Private)** olması gerekir; genel ağda Windows gelen bağlantıları engeller. Güvenlik duvarı kuralı: `Get-NetFirewallRule -DisplayName "Synpu*"`.
 - **"Port 8787 kullanımda" hatası:** Synpu zaten çalışıyor olabilir. Farklı port için: `$env:SYNPU_PORT=8788; .venv\Scripts\pythonw.exe -m synpu`
 - **GPU değerleri `—`:** NVIDIA sürücüsü yok ya da kart NVIDIA değil.
+- **CPU sıcaklığı gerçek sıcaklıktan düşük görünüyor:** Windows **Çekirdek Yalıtımı / Bellek Bütünlüğü** açıksa, LHM'nin çekirdek sürücüsü engellenir ve Synpu ACPI bölge sıcaklığına düşer (daha kaba bir değer). Kapatırsan Synpu 5 dakika içinde çekirdek sensörlerine geri döner.
 - **Adres değişti:** Modem PC'ye yeni IP verdiyse QR penceresindeki adres güncellenir; telefon sayfasındaki sekmeyi silip yeniden ekle.
 
 ## Kaldırma

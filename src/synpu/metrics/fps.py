@@ -38,10 +38,12 @@ class FpsTracker:
 
     def current(self, now: float) -> FpsStats:
         best: tuple[float, str, float] | None = None
-        for app, (ts, ms) in self._latest.items():
-            if app.lower() in self._exclude:
-                continue
+        items = list(self._latest.items())
+        for app, (ts, ms) in items:
             if now - ts > self._stale_s:
+                self._latest.pop(app, None)
+                continue
+            if app.lower() in self._exclude:
                 continue
             if best is None or ts > best[0]:
                 best = (ts, app, ms)
@@ -55,14 +57,16 @@ class PresentMonSampler:
         self._exe = Path(exe_path)
         self._tracker = tracker
         self._proc: subprocess.Popen | None = None
+        self._stop_event = threading.Event()
 
     def start(self) -> None:
-        thread = threading.Thread(target=self._run, daemon=True)
-        thread.start()
-
-    def _run(self) -> None:
         if not self._exe.exists():
             return
+        self._stop_event.clear()
+        self._spawn()
+        threading.Thread(target=self._read_loop, daemon=True).start()
+
+    def _spawn(self) -> None:
         try:
             self._proc = subprocess.Popen(
                 [
@@ -82,14 +86,38 @@ class PresentMonSampler:
             )
         except Exception:
             self._proc = None
-            return
-        try:
-            for line in self._proc.stdout:
-                self._tracker.feed_line(line)
-        except Exception:
-            pass
+
+    def _read_loop(self) -> None:
+        while not self._stop_event.is_set():
+            proc = self._proc
+            if proc is None:
+                self._spawn()
+                proc = self._proc
+                if proc is None:
+                    self._stop_event.wait(5.0)
+                    continue
+            try:
+                for line in proc.stdout:
+                    self._tracker.feed_line(line)
+                    if self._stop_event.is_set():
+                        break
+            except Exception:
+                pass
+            if self._stop_event.is_set():
+                break
+            try:
+                proc.terminate()
+                proc.wait(timeout=3)
+            except Exception:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+            self._proc = None
+            self._stop_event.wait(5.0)
 
     def stop(self) -> None:
+        self._stop_event.set()
         proc = self._proc
         if proc is None:
             return

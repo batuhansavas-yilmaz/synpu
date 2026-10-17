@@ -1,4 +1,5 @@
 import socket
+import threading
 import time
 
 from synpu.metrics.models import CpuStats, FpsStats, Snapshot
@@ -17,8 +18,13 @@ class MetricsCollector:
         self._clock = clock
         self._cached: dict | None = None
         self._cached_at: float | None = None
+        self._lock = threading.Lock()
 
     def snapshot(self) -> dict:
+        with self._lock:
+            return self._snapshot_locked()
+
+    def _snapshot_locked(self) -> dict:
         now = self._clock()
         if self._cached is not None and self._cached_at is not None and now - self._cached_at < self._ttl:
             return self._cached

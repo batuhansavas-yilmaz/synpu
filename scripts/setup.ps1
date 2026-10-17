@@ -79,9 +79,33 @@ if (-not (Test-Path $lhmDll)) {
 
 # 5) Guvenlik duvari kurali
 & (Join-Path $PSScriptRoot "firewall.ps1")
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Guvenlik duvari adimi basarisiz oldu." -ForegroundColor Red
+    exit 1
+}
 
 # 6) Zamanlanmis gorev
 & (Join-Path $PSScriptRoot "install_task.ps1")
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Zamanlanmis gorev adimi basarisiz oldu." -ForegroundColor Red
+    exit 1
+}
+
+# 7) Erisim kontrolu
+$port = if ($env:SYNPU_PORT) { [int]$env:SYNPU_PORT } else { 8787 }
+$ok = $false
+for ($i = 0; $i -lt 20; $i++) {
+    try {
+        Invoke-WebRequest -Uri "http://127.0.0.1:$port/api/snapshot" -UseBasicParsing -TimeoutSec 2 | Out-Null
+        $ok = $true
+        break
+    } catch {
+        Start-Sleep -Milliseconds 500
+    }
+}
+if (-not $ok) {
+    Write-Host "UYARI: Sunucuya erisilemedi (port $port). Penceredeki hata mesajina bakin." -ForegroundColor Yellow
+}
 
 Write-Host ""
 Write-Host "Kurulum tamamlandi. Synpu baslatildi." -ForegroundColor Green

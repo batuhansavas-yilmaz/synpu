@@ -11,6 +11,9 @@ VIRTUAL_PATTERNS = (
     "tap-",
     "tailscale",
     "zerotier",
+    "openvpn",
+    "wireguard",
+    "wintun",
 )
 
 
@@ -39,11 +42,25 @@ def candidate_ips() -> list[str]:
     return result
 
 
+def _interface_for_ip(ip: str) -> str | None:
+    try:
+        for iface, addr_list in psutil.net_if_addrs().items():
+            for addr in addr_list:
+                if addr.family == socket.AF_INET and addr.address == ip:
+                    return iface
+    except Exception:
+        pass
+    return None
+
+
 def primary_ip() -> str | None:
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
             sock.connect(("8.8.8.8", 80))
-            return sock.getsockname()[0]
+            ip = sock.getsockname()[0]
+        iface = _interface_for_ip(ip)
+        if iface is not None and not is_virtual(iface):
+            return ip
     except Exception:
         pass
     candidates = candidate_ips()

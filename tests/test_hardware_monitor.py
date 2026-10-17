@@ -27,3 +27,22 @@ def test_read_none_when_all_fail(monkeypatch):
     monkeypatch.setattr(reader, "_try_lhm", lambda: None)
     monkeypatch.setattr(reader, "_try_wmi", lambda: None)
     assert reader.read() is None
+
+
+def test_read_prefers_lhm(monkeypatch):
+    reader = CpuTempReader()
+    wmi_calls = []
+    monkeypatch.setattr(reader, "_try_lhm", lambda: 50.0)
+    monkeypatch.setattr(reader, "_try_wmi", lambda: wmi_calls.append(1) or 30.0)
+    assert reader.read() == 50.0
+    assert wmi_calls == []
+
+
+def test_wmi_result_cached(monkeypatch):
+    reader = CpuTempReader()
+    calls = []
+    monkeypatch.setattr(reader, "_try_lhm", lambda: None)
+    monkeypatch.setattr(reader, "_try_wmi", lambda: calls.append(1) or 47.5)
+    assert reader.read() == 47.5
+    assert reader.read() == 47.5
+    assert len(calls) == 1

@@ -46,7 +46,15 @@ def test_is_virtual_patterns():
 
 def test_primary_ip_socket_success(monkeypatch):
     monkeypatch.setattr(addresses.socket, "socket", lambda family, type: FakeSock("192.168.1.13"))
+    monkeypatch.setattr(addresses, "_interface_for_ip", lambda ip: "Ethernet")
     assert primary_ip() == "192.168.1.13"
+
+
+def test_primary_ip_virtual_falls_back(monkeypatch):
+    monkeypatch.setattr(addresses.socket, "socket", lambda family, type: FakeSock("10.8.0.2"))
+    monkeypatch.setattr(addresses, "_interface_for_ip", lambda ip: "Tailscale")
+    monkeypatch.setattr(addresses, "candidate_ips", lambda: ["192.168.1.20"])
+    assert primary_ip() == "192.168.1.20"
 
 
 def test_primary_ip_falls_back_to_candidates(monkeypatch):
@@ -56,7 +64,6 @@ def test_primary_ip_falls_back_to_candidates(monkeypatch):
     monkeypatch.setattr(addresses.socket, "socket", fake_socket)
     monkeypatch.setattr(addresses, "candidate_ips", lambda: ["192.168.1.20"])
     assert primary_ip() == "192.168.1.20"
-
 
 def test_candidate_ips_filters(monkeypatch):
     addrs = {

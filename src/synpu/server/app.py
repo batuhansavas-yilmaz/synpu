@@ -19,7 +19,7 @@ DEFAULT_STATIC_DIR = Path(__file__).resolve().parents[3] / "static"
 def is_allowed_origin(origin: str | None) -> bool:
     if origin is None:
         return True
-    return re.match(ORIGIN_REGEX, origin) is not None
+    return re.fullmatch(ORIGIN_REGEX, origin) is not None
 
 
 def create_app(collector, push_interval: float = config.PUSH_INTERVAL_S,

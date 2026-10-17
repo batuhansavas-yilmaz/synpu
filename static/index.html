@@ -85,7 +85,7 @@ const SELF = { name: location.hostname || "bu-pc", url: location.origin };
 
 let pcs = loadPcs();
 let active = Math.max(0, pcs.findIndex((p) => p.url === SELF.url));
-let ws = null, watchdog = null, pollTimer = null, retryTimer = null;
+let ws = null, watchdog = null, pollTimer = null, retryTimer = null, msgTimer = null, pollBusy = false, epoch = 0;
 
 function loadPcs() {
   let list;
@@ -97,7 +97,7 @@ function loadPcs() {
 }
 
 function savePcs() {
-  localStorage.setItem(STORE, JSON.stringify(pcs));
+  try { localStorage.setItem(STORE, JSON.stringify(pcs)); } catch (e) {}
 }
 
 function setStatus(state) {
@@ -114,7 +114,7 @@ function render(d) {
   $("gpu-name").textContent = g && g.name ? g.name : dash;
   $("val-gpu-usage").textContent = fmt(g && g.usage_pct, "%", 0);
   $("val-gpu-temp").textContent = fmt(g && g.temp_c, "\u00b0C", 0);
-  $("val-gpu-vram").textContent = g && g.vram_used_mb != null
+  $("val-gpu-vram").textContent = g && g.vram_used_mb != null && g.vram_total_mb != null
     ? (g.vram_used_mb / 1024).toFixed(1) + " / " + Math.round(g.vram_total_mb / 1024) + " GB"
     : dash;
   $("val-gpu-power").textContent = fmt(g && g.power_w, " W", 0);
@@ -130,19 +130,35 @@ function render(d) {
 
 function stopConn() {
   clearTimeout(watchdog); watchdog = null;
+  clearTimeout(msgTimer); msgTimer = null;
   clearInterval(pollTimer); pollTimer = null;
   clearInterval(retryTimer); retryTimer = null;
+  pollBusy = false;
   if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} ws = null; }
 }
 
+function clearValues() {
+  ["val-cpu-usage", "val-cpu-temp", "gpu-name", "val-gpu-usage", "val-gpu-temp",
+   "val-gpu-vram", "val-gpu-power", "val-ram-pct", "val-ram-used",
+   "val-fps-app", "val-fps-value"].forEach((id) => { $(id).textContent = dash; });
+}
+
 function startPolling(pc) {
+  const myEpoch = epoch;
   setStatus("poll");
   if (!pollTimer) {
     const tick = async () => {
+      if (pollBusy) return;
+      pollBusy = true;
       try {
         const res = await fetch(pc.url + "/api/snapshot", { cache: "no-store" });
-        render(await res.json());
-      } catch (e) { setStatus("dead"); }
+        const data = await res.json();
+        if (epoch === myEpoch && pcs[active] === pc) render(data);
+      } catch (e) {
+        if (epoch === myEpoch && pcs[active] === pc) setStatus("dead");
+      } finally {
+        pollBusy = false;
+      }
     };
     tick();
     pollTimer = setInterval(tick, 2000);
@@ -152,21 +168,35 @@ function startPolling(pc) {
 
 function tryWs(pc) {
   if (ws || pcs[active] !== pc) return;
+  const myEpoch = epoch;
   try { ws = new WebSocket(pc.url.replace(/^http/, "ws") + "/ws"); }
   catch (e) { startPolling(pc); return; }
+  const rearm = () => {
+    clearTimeout(msgTimer);
+    msgTimer = setTimeout(() => {
+      if (ws && ws.readyState === 1) { try { ws.close(); } catch (e) {} }
+    }, 5000);
+  };
   watchdog = setTimeout(() => {
     if (ws && ws.readyState !== 1) { try { ws.close(); } catch (e) {} }
   }, 2000);
   ws.onopen = () => {
+    if (epoch !== myEpoch) { try { ws.close(); } catch (e) {} return; }
     clearTimeout(watchdog); watchdog = null;
     clearInterval(pollTimer); pollTimer = null;
     clearInterval(retryTimer); retryTimer = null;
     setStatus("live");
+    rearm();
   };
-  ws.onmessage = (ev) => { try { render(JSON.parse(ev.data)); } catch (e) {} };
+  ws.onmessage = (ev) => {
+    if (epoch !== myEpoch) return;
+    rearm();
+    try { render(JSON.parse(ev.data)); } catch (e) {}
+  };
   ws.onclose = () => {
+    clearTimeout(msgTimer); msgTimer = null;
     ws = null;
-    if (pcs[active] === pc) { setStatus("dead"); startPolling(pc); }
+    if (epoch === myEpoch && pcs[active] === pc) { setStatus("dead"); startPolling(pc); }
   };
   ws.onerror = () => { if (ws) { try { ws.close(); } catch (e) {} } };
 }
@@ -191,20 +221,23 @@ function renderTabs() {
 }
 
 function removePc(i) {
+  const wasActive = i === active;
   pcs.splice(i, 1);
   if (active > i) active--;
   if (active >= pcs.length) active = pcs.length - 1;
+  if (active < 0) active = 0;
   savePcs();
-  stopConn();
-  if (pcs.length === 0) { setStatus("dead"); renderTabs(); return; }
-  activate(active);
+  if (pcs.length === 0) { stopConn(); setStatus("dead"); renderTabs(); return; }
+  if (wasActive) { activate(active); } else { renderTabs(); }
 }
 
 function activate(i) {
   active = i;
+  epoch++;
   const pc = pcs[active];
   renderTabs();
   stopConn();
+  clearValues();
   if (!pc) { setStatus("dead"); return; }
   tryWs(pc);
 }
