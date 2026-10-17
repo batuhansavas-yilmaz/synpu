@@ -570,6 +570,7 @@ nav.bottom .inner {
       <div class="card-title">Yenileme</div>
       <div class="muted">Canlı akış: 0.1 sn (WebSocket). Bağlantı koparsa 1 sn yoklama.</div>
       <button class="btn" id="export-csv" type="button" style="width:100%;margin-top:10px">Grafik verilerini indir (CSV)</button>
+      <button class="btn" id="export-pdf" type="button" style="width:100%;margin-top:8px">Tablolu rapor (PDF / Yazdır)</button>
       <div class="row-between" style="margin-top:10px">
         <span class="muted">Başlangıçta çalıştır</span>
         <button class="btn" id="startup-toggle" type="button">—</button>
@@ -1612,6 +1613,127 @@ async function exportHistoryCsv() {
 }
 
 $("export-csv").addEventListener("click", exportHistoryCsv);
+
+function reportNumber(value, digits) {
+  if (value === null || value === undefined || !isFinite(Number(value))) return "—";
+  return Number(value).toFixed(digits).replace(".", ",");
+}
+
+function reportTime(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return pad(date.getHours()) + ":" + pad(date.getMinutes());
+}
+
+async function buildHistoryReport() {
+  const pc = pcs[active];
+  if (!pc) return null;
+  const res = await fetch(pc.url + "/api/history?minutes=60", { cache: "no-store" });
+  const data = await res.json();
+  const samples = data.samples || [];
+  if (!samples.length) return null;
+  const buckets = new Map();
+  samples.forEach((sample) => {
+    const key = Math.floor(Number(sample.ts) / 60);
+    if (!buckets.has(key)) buckets.set(key, []);
+    buckets.get(key).push(sample);
+  });
+  const average = (bucket, field) => {
+    const values = bucket
+      .map((sample) => sample[field])
+      .filter((value) => value !== null && value !== undefined && isFinite(Number(value)))
+      .map(Number);
+    if (!values.length) return null;
+    return values.reduce((sum, value) => sum + value, 0) / values.length;
+  };
+  const diskKeys = lastDisks.slice(0, 4).map((disk) => String(disk.label || "").replace(/[^A-Za-z0-9]/g, ""));
+  const rows = Array.from(buckets.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([minute, bucket]) => ({
+      time: new Date(Number(minute) * 60000),
+      cpu: average(bucket, "cpu_usage"),
+      cpuTemp: average(bucket, "cpu_temp"),
+      cpuFreq: average(bucket, "cpu_freq"),
+      gpu: average(bucket, "gpu_usage"),
+      gpuTemp: average(bucket, "gpu_temp"),
+      gpuPower: average(bucket, "gpu_power"),
+      ram: average(bucket, "ram_percent"),
+      disks: diskKeys.map((key) => average(bucket, "disk_" + key + "_percent")),
+      down: average(bucket, "net_down"),
+      up: average(bucket, "net_up"),
+    }));
+  if (!rows.length) return null;
+  const first = rows[0].time;
+  const lastRow = rows[rows.length - 1].time;
+  const pad = (n) => String(n).padStart(2, "0");
+  const day = (date) => pad(date.getDate()) + "." + pad(date.getMonth() + 1) + "." + date.getFullYear();
+  const headerCells = [
+    "Saat",
+    "CPU %",
+    "CPU °C",
+    "CPU GHz",
+    "GPU %",
+    "GPU °C",
+    "GPU W",
+    "RAM %",
+    ...lastDisks.slice(0, 4).map((disk) => "Disk " + disk.label + " %"),
+    "İndirme MB/s",
+    "Yükleme MB/s",
+  ];
+  const body = rows.map((row) => {
+    const cells = [
+      reportTime(row.time),
+      reportNumber(row.cpu, 0),
+      reportNumber(row.cpuTemp, 1),
+      reportNumber(row.cpuFreq ? row.cpuFreq / 1000 : null, 2),
+      reportNumber(row.gpu, 0),
+      reportNumber(row.gpuTemp, 1),
+      reportNumber(row.gpuPower, 0),
+      reportNumber(row.ram, 0),
+      ...row.disks.map((value) => reportNumber(value, 0)),
+      reportNumber(row.down ? row.down / 1048576 : null, 2),
+      reportNumber(row.up ? row.up / 1048576 : null, 2),
+    ];
+    return "<tr>" + cells.map((cell) => "<td>" + cell + "</td>").join("") + "</tr>";
+  }).join("");
+  const html =
+    "<!doctype html><html><head><meta charset='utf-8'><title>Synpu Raporu</title><style>" +
+    "@page { size: A4 landscape; margin: 12mm; }" +
+    "body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a2233; margin: 0; }" +
+    "h1 { font-size: 20px; margin: 0 0 4px; } .meta { font-size: 12px; color: #55627a; margin-bottom: 14px; }" +
+    "table { width: 100%; border-collapse: collapse; font-size: 11px; }" +
+    "th { background: #eef2f9; border: 1px solid #c9d2e3; padding: 6px 8px; text-align: right; }" +
+    "th:first-child, td:first-child { text-align: left; }" +
+    "td { border: 1px solid #d9e0ec; padding: 5px 8px; text-align: right; font-variant-numeric: tabular-nums; }" +
+    "tr:nth-child(even) td { background: #f7f9fc; }" +
+    "</style></head><body>" +
+    "<h1>Synpu — " + escapeHtml(pc.name) + "</h1>" +
+    "<div class='meta'>" + day(first) + " " + reportTime(first) + " – " + day(lastRow) + " " + reportTime(lastRow) +
+    " · Dakikalık ortalamalar · " + (pc.url || "") + "</div>" +
+    "<table><thead><tr>" + headerCells.map((cell) => "<th>" + cell + "</th>").join("") +
+    "</tr></thead><tbody>" + body + "</tbody></table></body></html>";
+  return html;
+}
+
+async function exportHistoryPdf() {
+  const html = await buildHistoryReport();
+  if (!html) return;
+  const frame = document.createElement("iframe");
+  frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
+  document.body.appendChild(frame);
+  const doc = frame.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+  setTimeout(() => {
+    try {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    } catch (e) {}
+    setTimeout(() => frame.remove(), 30000);
+  }, 300);
+}
+
+$("export-pdf").addEventListener("click", exportHistoryPdf);
 
 let startupEnabled = null;
 
