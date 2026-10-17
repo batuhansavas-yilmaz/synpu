@@ -1518,6 +1518,68 @@ document.addEventListener("keydown", (ev) => {
   if (ev.key === "Escape") closeSettingsModal();
 });
 
+const CSV_LABELS = {
+  cpu_usage: ["CPU Kullanım (%)", 0, 1],
+  cpu_temp: ["CPU Sıcaklık (°C)", 1, 1],
+  cpu_freq: ["CPU Frekans (GHz)", 2, 1000],
+  gpu_usage: ["GPU Kullanım (%)", 0, 1],
+  gpu_temp: ["GPU Sıcaklık (°C)", 1, 1],
+  gpu_freq: ["GPU Frekans (GHz)", 2, 1000],
+  gpu_power: ["GPU Güç (W)", 0, 1],
+  gpu_hotspot: ["GPU Hotspot (°C)", 1, 1],
+  gpu_fan: ["GPU Fan (%)", 0, 1],
+  ram_percent: ["RAM (%)", 1, 1],
+  ram_used_mb: ["RAM Kullanılan (GB)", 1, 1024],
+  disk_percent: ["Disk (sistem) Kullanım (%)", 0, 1],
+  disk_temp: ["Disk (sistem) Sıcaklık (°C)", 1, 1],
+  net_down: ["İndirme (MB/s)", 2, 1048576],
+  net_up: ["Yükleme (MB/s)", 2, 1048576],
+};
+
+function csvDate(value) {
+  const date = new Date(Number(value) * 1000);
+  const pad = (n) => String(n).padStart(2, "0");
+  return pad(date.getDate()) + "." + pad(date.getMonth() + 1) + "." + date.getFullYear() +
+    " " + pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+}
+
+function csvLabel(key) {
+  if (CSV_LABELS[key]) return CSV_LABELS[key][0];
+  if (key.startsWith("cpu_core_")) return "Çekirdek " + key.slice(9) + " (%)";
+  const diskMatch = key.match(/^disk_(.+)_(percent|temp|read|write)$/);
+  if (diskMatch) {
+    const names = { percent: "Kullanım (%)", temp: "Sıcaklık (°C)", read: "Okuma (MB/s)", write: "Yazma (MB/s)" };
+    return "Disk " + diskMatch[1] + " " + names[diskMatch[2]];
+  }
+  const gpuMatch = key.match(/^gpu_(.+)_(usage|temp|power|fan)$/);
+  if (gpuMatch) {
+    const names = { usage: "Kullanım (%)", temp: "Sıcaklık (°C)", power: "Güç (W)", fan: "Fan (%)" };
+    return "GPU " + gpuMatch[1] + " " + names[gpuMatch[2]];
+  }
+  return key;
+}
+
+function csvNumber(key, value) {
+  let digits = 2;
+  let scale = 1;
+  const known = CSV_LABELS[key];
+  if (known) {
+    digits = known[1];
+    scale = known[2] || 1;
+  } else if (key.endsWith("_read") || key.endsWith("_write")) {
+    scale = 1048576;
+    digits = 2;
+  } else if (key.endsWith("_freq")) {
+    scale = 1000;
+    digits = 2;
+  } else if (key.endsWith("_percent") || key.endsWith("_usage") || key.endsWith("_temp") || key.endsWith("_power")) {
+    digits = 1;
+  }
+  const num = Number(value) / scale;
+  if (!isFinite(num)) return "";
+  return num.toFixed(digits).replace(".", ",");
+}
+
 async function exportHistoryCsv() {
   const pc = pcs[active];
   if (!pc) return;
@@ -1528,14 +1590,16 @@ async function exportHistoryCsv() {
     if (!samples.length) return;
     const keys = Array.from(new Set(samples.flatMap((sample) => Object.keys(sample))));
     const order = ["ts"].concat(keys.filter((key) => key !== "ts").sort());
-    const lines = [order.join(",")];
+    const lines = [order.map(csvLabel).join(";")];
     samples.forEach((sample) => {
       lines.push(order.map((key) => {
         const value = sample[key];
-        return value === null || value === undefined ? "" : String(value);
-      }).join(","));
+        if (value === null || value === undefined) return "";
+        if (key === "ts") return csvDate(value);
+        return csvNumber(key, value);
+      }).join(";"));
     });
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const blob = new Blob(["\uFEFF" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
