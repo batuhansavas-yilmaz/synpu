@@ -1,5 +1,5 @@
 #define MyAppName "Synpu"
-#define MyAppVersion "0.2.4"
+#define MyAppVersion "0.2.5"
 #define MyAppPublisher "Batuhan Savas Yilmaz"
 #define MyAppURL "https://github.com/batuhansavas-yilmaz/synpu"
 
