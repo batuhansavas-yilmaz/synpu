@@ -30,7 +30,7 @@ from synpu.metrics.processes import ProcessTopReader
 from synpu.metrics.ram import RamInfoReader, read_ram
 from synpu.metrics.smart import DiskHealthReader, SmartTempReader
 from synpu.metrics.storage import read_disks
-from synpu.metrics.sysinfo import os_name
+from synpu.metrics.sysinfo import SessionReader, os_name
 from synpu.net.addresses import primary_ip
 from synpu.server.app import create_app
 from synpu.ui.qr_window import run_ui
@@ -108,6 +108,7 @@ def main() -> None:
         ram_info_source=RamInfoReader().read,
         battery_source=read_battery,
         uptime_source=lambda: time.time() - psutil.boot_time(),
+        session_source=SessionReader().read,
         disk_io_source=disk_meter.update,
         disk_map_source=disk_map.read,
         display_source=DisplayInfoReader().read,

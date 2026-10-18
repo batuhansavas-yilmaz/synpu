@@ -2,7 +2,7 @@ from synpu.metrics.battery import read_battery
 from synpu.metrics.display import parse_controllers, parse_monitor_name, parse_refresh_rate
 from synpu.metrics.motherboard import parse_motherboard
 from synpu.metrics.network_meta import median_ping, parse_isp_org, parse_ping_ms, parse_wifi_ssid
-from synpu.metrics.sysinfo import format_os_name
+from synpu.metrics.sysinfo import filetime_to_unix, format_os_name
 
 
 class FakeBattery:
@@ -85,6 +85,9 @@ def test_median_ping():
     assert median_ping([None, 50]) == 50
     assert median_ping([]) is None
 
+
+def test_filetime_to_unix():
+    assert filetime_to_unix(116444736000000000) == 0.0
 
 def test_format_os_name():
     assert format_os_name("Windows", "11", "10.0.26300", "Professional") == "Windows 11 Pro"

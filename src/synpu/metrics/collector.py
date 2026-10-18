@@ -60,7 +60,7 @@ class MetricsCollector:
                  disk_io_source=None, disk_map_source=None, display_source=None,
                  motherboard_source=None, top_source=None,
                  wifi_source=None, isp_source=None, ping_source=None,
-                 disk_health_source=None, os_source=None):
+                 disk_health_source=None, os_source=None, session_source=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -85,6 +85,7 @@ class MetricsCollector:
         self._ping_source = ping_source
         self._disk_health_source = disk_health_source
         self._os_source = os_source
+        self._session_source = session_source
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
@@ -277,6 +278,12 @@ class MetricsCollector:
                 os_name_value = self._os_source()
             except Exception:
                 os_name_value = None
+        session = None
+        if self._session_source is not None:
+            try:
+                session = self._session_source()
+            except Exception:
+                session = None
 
         snapshot = Snapshot(
             hostname=self._hostname,
@@ -291,6 +298,7 @@ class MetricsCollector:
             gpus=gpu_candidates,
             battery=battery,
             uptime_s=uptime,
+            session_s=session,
             display=display,
             motherboard=motherboard,
             top=top,

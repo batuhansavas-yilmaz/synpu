@@ -1,4 +1,7 @@
 import platform
+import subprocess
+import threading
+import time
 from functools import lru_cache
 
 EDITION_NAMES = {
@@ -47,3 +50,53 @@ def os_name() -> str | None:
     except Exception:
         edition = ""
     return format_os_name("Windows", platform.release(), platform.version(), edition)
+
+
+LOGON_TIME_COMMAND = (
+    "$s = Get-CimInstance Win32_LogonSession | Where-Object { $_.LogonType -in 2,10,11 } "
+    "| Sort-Object StartTime -Descending | Select-Object -First 1; "
+    "if ($s) { $s.StartTime.ToFileTimeUtc() }"
+)
+
+
+def filetime_to_unix(value: int) -> float:
+    return value / 10_000_000 - 11_644_473_600
+
+
+class SessionReader:
+    def __init__(self, ttl: float = 30.0):
+        self._ttl = ttl
+        self._started: float | None = None
+        self._at = float("-inf")
+        self._lock = threading.Lock()
+
+    def _query(self) -> float | None:
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", LOGON_TIME_COMMAND],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            if result.returncode != 0:
+                return None
+            lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+            if not lines:
+                return None
+            filetime = int(lines[-1])
+            if filetime <= 0:
+                return None
+            return filetime_to_unix(filetime)
+        except Exception:
+            return None
+
+    def read(self) -> int | None:
+        now = time.monotonic()
+        with self._lock:
+            if now - self._at >= self._ttl:
+                self._started = self._query()
+                self._at = now
+            if self._started is None:
+                return None
+            return max(0, int(time.time() - self._started))

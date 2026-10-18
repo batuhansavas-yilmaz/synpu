@@ -431,7 +431,7 @@ nav.bottom .inner {
         <span class="muted">Ekran</span><b id="home-sys-screen">—</b>
       </div>
       <div class="row-between" style="margin-top:6px">
-        <span class="muted">Çalışma süresi</span><b id="home-sys-uptime">—</b>
+        <span class="muted">Oturum süresi</span><b id="home-sys-uptime">—</b>
       </div>
     </div>
 
@@ -857,8 +857,8 @@ function render(d) {
 
   $("home-sys-host").textContent = d.hostname || dash;
   $("home-sys-os").textContent = d.os_name || dash;
-  if (d.uptime_s != null) {
-    const totalUp = Math.max(0, Math.floor(Number(d.uptime_s)));
+  if (d.session_s != null) {
+    const totalUp = Math.max(0, Math.floor(Number(d.session_s)));
     const upDays = Math.floor(totalUp / 86400);
     const upHours = Math.floor((totalUp % 86400) / 3600);
     const upMinutes = Math.floor((totalUp % 3600) / 60);
@@ -891,9 +891,9 @@ function render(d) {
   const fans = Array.isArray(d.fans) ? d.fans : [];
   const activeFans = fans.filter((f) => Number(f.rpm) > 0);
   const fanRows = activeFans.map((f) => '<div class="list-item"><span class="muted">' + escapeHtml(f.name) + '</span><b>' + Math.round(f.rpm) + ' RPM</b></div>');
-  if (gpu && gpu.fan_rpm != null && Number(gpu.fan_rpm) > 0) {
+  if (gpu && gpu.fan_rpm != null && (Number(gpu.fan_rpm) > 0 || gpu.fan_pct == null || Number(gpu.fan_pct) === 0)) {
     fanRows.unshift('<div class="list-item"><span class="muted">GPU Fan</span><b>' + Math.round(Number(gpu.fan_rpm)) + ' RPM</b></div>');
-  } else if (gpu && gpu.fan_pct != null && Number(gpu.fan_pct) > 0) {
+  } else if (gpu && gpu.fan_pct != null) {
     fanRows.unshift('<div class="list-item"><span class="muted">GPU Fan</span><b>' + fmt(gpu.fan_pct, "%", 0) + '</b></div>');
   }
   $("home-fans").innerHTML = fanRows.length ? fanRows.join("") : '<div class="muted">' + dash + '</div>';
