@@ -3,6 +3,14 @@ import time
 from synpu.metrics.history import HistoryBuffer
 
 
+def test_history_series_uses_active_time():
+    h = HistoryBuffer(interval=0.0)
+    base = 1000.0
+    h.record(base, {"ts": base, "active_ts": 0.0, "v": 1.0})
+    h.record(base + 60, {"ts": base + 60, "active_ts": 60.0, "v": 2.0})
+    h.record(base + 120, {"ts": base + 120, "active_ts": 120.0, "v": 3.0})
+    assert [s["v"] for s in h.series(1)] == [2.0, 3.0]
+
 def test_history_persists_across_instances(tmp_path):
     path = tmp_path / "history.json"
     h = HistoryBuffer(interval=0.0, path=path, save_interval=0.0)

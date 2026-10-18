@@ -120,8 +120,15 @@ class HistoryBuffer:
                     source = list(self._raw)
         if not source:
             return []
-        cutoff = source[-1]["ts"] - minutes * 60
-        items = [s for s in source if s["ts"] >= cutoff]
+        last = source[-1]
+        if "active_ts" in last:
+            cutoff = float(last["active_ts"]) - minutes * 60
+            items = [s for s in source
+                     if s.get("active_ts") is not None
+                     and float(s["active_ts"]) >= cutoff]
+        else:
+            cutoff = last["ts"] - minutes * 60
+            items = [s for s in source if s["ts"] >= cutoff]
         if len(items) > max_points:
             stride = max(1, len(items) // max_points)
             items = items[::stride]

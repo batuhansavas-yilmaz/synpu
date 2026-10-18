@@ -115,6 +115,7 @@ class Snapshot:
     battery: BatteryStats | None = None
     uptime_s: int | None = None
     session_s: int | None = None
+    install_s: int | None = None
     display: DisplayStats | None = None
     motherboard: MotherboardStats | None = None
     top: TopProcesses | None = None

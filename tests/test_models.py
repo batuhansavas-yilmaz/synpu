@@ -22,6 +22,7 @@ def test_snapshot_to_dict_nullable_gpu_and_fps():
                  "battery": None,
                  "uptime_s": None,
                  "session_s": None,
+                 "install_s": None,
                  "display": None,
                  "motherboard": None,
                  "top": None,

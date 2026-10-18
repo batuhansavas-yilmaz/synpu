@@ -25,7 +25,8 @@ class FakeNet:
 def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk_temp_source=None, gpus=(), ram_info_source=None,
                battery_source=None, uptime_source=None, disk_io_source=None, disk_map_source=None, display_source=None,
                motherboard_source=None, top_source=None, wifi_source=None, isp_source=None, ping_source=None,
-               disk_health_source=None, ram_temp_c=None, os_source=None, session_source=None):
+               disk_health_source=None, ram_temp_c=None, os_source=None, session_source=None,
+               install_source=None):
     clock = clock or FakeClock()
     counters = counters if counters is not None else {}
 
@@ -90,6 +91,7 @@ def _collector(clock=None, counters=None, gpu_source=None, ram_source=None, disk
         disk_health_source=disk_health_source,
         os_source=os_source,
         session_source=session_source,
+        install_source=install_source,
     )
     return col, counters, clock
 
@@ -98,7 +100,8 @@ def test_snapshot_schema_and_hostname():
     col, _, _ = _collector()
     d = col.snapshot()
     assert set(d) == {"hostname", "timestamp", "cpu", "gpu", "ram", "fps", "disks", "net", "fans", "gpus",
-                      "battery", "uptime_s", "session_s", "display", "motherboard", "top", "isp",
+                      "battery", "uptime_s", "session_s", "install_s", "display", "motherboard", "top",
+                      "isp",
                       "wifi", "ping_ms", "os_name"}
     assert d["cpu"]["cores"] == (50.0, 60.0)
     assert d["hostname"] == "pc"
@@ -212,6 +215,15 @@ def test_ram_temp_from_hardware_monitor():
     col, _, _ = _collector(ram_temp_c=48.5)
     assert col.snapshot()["ram"]["temp_c"] == 48.5
 
+
+def test_install_uptime_from_source():
+    col, _, _ = _collector(install_source=lambda: 4321)
+    assert col.snapshot()["install_s"] == 4321
+
+def test_history_sample_has_active_ts():
+    col, _, _ = _collector(install_source=lambda: 4321)
+    col.snapshot()
+    assert col.history.series(720)[-1].get("active_ts") == 4321
 
 def test_session_uptime_from_source():
     col, _, _ = _collector(session_source=lambda: 1234)

@@ -60,7 +60,8 @@ class MetricsCollector:
                  disk_io_source=None, disk_map_source=None, display_source=None,
                  motherboard_source=None, top_source=None,
                  wifi_source=None, isp_source=None, ping_source=None,
-                 disk_health_source=None, os_source=None, session_source=None):
+                 disk_health_source=None, os_source=None, session_source=None,
+                 install_source=None):
         self._cpu_source = cpu_source
         self._gpu_source = gpu_source
         self._ram_source = ram_source
@@ -86,6 +87,7 @@ class MetricsCollector:
         self._disk_health_source = disk_health_source
         self._os_source = os_source
         self._session_source = session_source
+        self._install_source = install_source
         self._cached: dict | None = None
         self._cached_at: float | None = None
         self._lock = threading.Lock()
@@ -284,6 +286,12 @@ class MetricsCollector:
                 session = self._session_source()
             except Exception:
                 session = None
+        install = None
+        if self._install_source is not None:
+            try:
+                install = self._install_source()
+            except Exception:
+                install = None
 
         snapshot = Snapshot(
             hostname=self._hostname,
@@ -299,6 +307,7 @@ class MetricsCollector:
             battery=battery,
             uptime_s=uptime,
             session_s=session,
+            install_s=install,
             display=display,
             motherboard=motherboard,
             top=top,
@@ -309,7 +318,10 @@ class MetricsCollector:
         )
         self._cached = snapshot.to_dict()
         self._cached_at = now
-        self.history.record(now, self._history_sample(snapshot.timestamp, cpu, gpu, gpu_candidates, ram, storage, net))
+        history_sample = self._history_sample(snapshot.timestamp, cpu, gpu, gpu_candidates, ram, storage, net)
+        if install is not None:
+            history_sample["active_ts"] = install
+        self.history.record(now, history_sample)
         return self._cached
 
     @staticmethod

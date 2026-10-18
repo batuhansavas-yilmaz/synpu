@@ -14,6 +14,12 @@ if (-not (Test-Path $vbs)) {
 try {
     Stop-ScheduledTask -TaskName "Synpu" -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 2
+    $stateDir = Split-Path -Parent $InstallRoot
+    New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
+    $stamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    [IO.File]::WriteAllText((Join-Path $stateDir "installed_at"), [string]$stamp)
+    Remove-Item (Join-Path $stateDir "history.json") -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $stateDir "runtime.json") -Force -ErrorAction SilentlyContinue
     $action = New-ScheduledTaskAction -Execute $pythonw -Argument "-m synpu" -WorkingDirectory $InstallRoot
     $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) -MultipleInstances IgnoreNew
     Register-ScheduledTask -TaskName "Synpu" -Action $action -Settings $settings -RunLevel Highest -Force | Out-Null

@@ -23,6 +23,7 @@ from synpu.metrics.display import DisplayInfoReader
 from synpu.metrics.fps import FpsTracker, PresentMonSampler, foreground_pid, foreground_title
 from synpu.metrics.gpu import read_gpu
 from synpu.metrics.hardware_monitor import CpuTempReader
+from synpu.metrics.runtime import RuntimeClock, read_install_id
 from synpu.metrics.motherboard import MotherboardReader
 from synpu.metrics.net import NetSpeedMeter
 from synpu.metrics.network_meta import IspReader, LatencyReader, WifiReader
@@ -96,6 +97,9 @@ def main() -> None:
     temp_reader = CpuTempReader()
     disk_meter = DiskSpeedMeter()
     disk_map = DiskDeviceMap()
+    install_id = read_install_id(STATE_DIR, ROOT)
+    runtime = RuntimeClock(STATE_DIR, install_id)
+
     collector = MetricsCollector(
         cpu_source=read_cpu,
         gpu_source=read_gpu,
@@ -109,6 +113,7 @@ def main() -> None:
         battery_source=read_battery,
         uptime_source=lambda: time.time() - psutil.boot_time(),
         session_source=SessionReader().read,
+        install_source=runtime.total,
         disk_io_source=disk_meter.update,
         disk_map_source=disk_map.read,
         display_source=DisplayInfoReader().read,
@@ -148,6 +153,10 @@ def main() -> None:
     finally:
         try:
             collector.history.flush()
+        except Exception:
+            pass
+        try:
+            runtime.flush()
         except Exception:
             pass
         sampler.stop()
