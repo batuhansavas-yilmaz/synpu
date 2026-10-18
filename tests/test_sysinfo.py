@@ -1,7 +1,7 @@
 from synpu.metrics.battery import read_battery
 from synpu.metrics.display import parse_controllers, parse_monitor_name, parse_refresh_rate
 from synpu.metrics.motherboard import parse_motherboard
-from synpu.metrics.network_meta import parse_isp_org, parse_ping_ms, parse_wifi_ssid
+from synpu.metrics.network_meta import median_ping, parse_isp_org, parse_ping_ms, parse_wifi_ssid
 from synpu.metrics.sysinfo import format_os_name
 
 
@@ -77,6 +77,13 @@ def test_parse_ping_ms():
     assert parse_ping_ms("23") == 23
     assert parse_ping_ms("-1") is None
     assert parse_ping_ms("bad") is None
+
+
+def test_median_ping():
+    assert median_ping([60, 80, 70]) == 70
+    assert median_ping([60, 70]) == 70
+    assert median_ping([None, 50]) == 50
+    assert median_ping([]) is None
 
 
 def test_format_os_name():

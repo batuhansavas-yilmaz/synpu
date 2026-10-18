@@ -48,10 +48,20 @@ def parse_ping_ms(text) -> int | None:
     return value if value > 0 else None
 
 
+def median_ping(values) -> int | None:
+    valid = sorted(v for v in values if v is not None and v > 0)
+    if not valid:
+        return None
+    return valid[len(valid) // 2]
+
+
 class LatencyReader:
-    def __init__(self, interval: float = 10.0):
+    def __init__(self, interval: float = 10.0, window: int = 3):
         self._interval = interval
+        self._window = max(1, int(window))
         self._value: int | None = None
+        self._samples: list[int] = []
+        self._failures = 0
         self._lock = threading.Lock()
         threading.Thread(target=self._loop, daemon=True).start()
 
@@ -65,10 +75,19 @@ class LatencyReader:
                 creationflags=subprocess.CREATE_NO_WINDOW,
             )
             value = parse_ping_ms(result.stdout) if result.returncode == 0 else None
-            with self._lock:
-                self._value = value
         except Exception:
-            pass
+            value = None
+        with self._lock:
+            if value is None:
+                self._failures += 1
+                if self._failures >= 3:
+                    self._samples.clear()
+                    self._value = None
+                return
+            self._failures = 0
+            self._samples.append(value)
+            self._samples = self._samples[-self._window:]
+            self._value = median_ping(self._samples)
 
     def _loop(self) -> None:
         while True:
