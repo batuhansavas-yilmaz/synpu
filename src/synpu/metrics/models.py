@@ -21,6 +21,7 @@ class GpuStats:
     freq_mhz: float | None = None
     hot_spot_c: float | None = None
     fan_pct: float | None = None
+    fan_rpm: int | None = None
 
 
 @dataclass(frozen=True)

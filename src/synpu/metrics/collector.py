@@ -30,6 +30,7 @@ def collect_gpu_candidates(primary: GpuStats | None, extras: tuple[GpuStats, ...
                 vram_total_mb=primary.vram_total_mb if primary.vram_total_mb is not None else extra.vram_total_mb,
                 hot_spot_c=primary.hot_spot_c if primary.hot_spot_c is not None else extra.hot_spot_c,
                 fan_pct=primary.fan_pct if primary.fan_pct is not None else extra.fan_pct,
+                fan_rpm=primary.fan_rpm if primary.fan_rpm is not None else extra.fan_rpm,
             )
             continue
         candidates.append(extra)

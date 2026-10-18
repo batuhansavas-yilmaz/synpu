@@ -29,6 +29,15 @@ def read_gpu(nvml_mod=None) -> GpuStats | None:
             freq_mhz = float(nvml_mod.nvmlDeviceGetClockInfo(handle, nvml_mod.NVML_CLOCK_GRAPHICS))
         except Exception:
             freq_mhz = None
+        try:
+            fan_pct = float(nvml_mod.nvmlDeviceGetFanSpeed(handle))
+        except Exception:
+            fan_pct = None
+        try:
+            rpm_reader = getattr(nvml_mod, "nvmlDeviceGetFanSpeedRPM", None)
+            fan_rpm = int(rpm_reader(handle)) if rpm_reader is not None else None
+        except Exception:
+            fan_rpm = None
         return GpuStats(
             name=name,
             usage_pct=float(usage.gpu),
@@ -37,6 +46,8 @@ def read_gpu(nvml_mod=None) -> GpuStats | None:
             vram_total_mb=int(mem.total) // (1024 * 1024),
             power_w=power_w,
             freq_mhz=freq_mhz,
+            fan_pct=fan_pct,
+            fan_rpm=fan_rpm,
         )
     except Exception:
         return None

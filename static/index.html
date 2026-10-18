@@ -777,7 +777,11 @@ function render(d) {
   $("val-gpu-power").textContent = fmt(gpu && gpu.power_w, " W", 0);
   $("val-gpu-freq").textContent = ghz(gpu && gpu.freq_mhz, 1);
   $("gd-hotspot").textContent = fmt(gpu && gpu.hot_spot_c, "\u00b0C", 1);
-  $("gd-fan").textContent = fmt(gpu && gpu.fan_pct, "%", 0);
+  const gpuFanRpm = gpu && gpu.fan_rpm != null ? Number(gpu.fan_rpm) : null;
+  const gpuFanPct = gpu && gpu.fan_pct != null ? Number(gpu.fan_pct) : null;
+  $("gd-fan").textContent = gpuFanRpm != null && (gpuFanRpm > 0 || gpuFanPct == null || gpuFanPct === 0)
+    ? Math.round(gpuFanRpm) + " RPM"
+    : (gpuFanPct != null ? fmt(gpuFanPct, "%", 0) : dash);
   $("home-gpu-name").textContent = gpu && gpu.name ? gpu.name : dash;
   $("gd-name").textContent = gpu && gpu.name ? gpu.name : dash;
   $("gd-usage").textContent = fmt(gpu && gpu.usage_pct, "", 0);
@@ -887,7 +891,9 @@ function render(d) {
   const fans = Array.isArray(d.fans) ? d.fans : [];
   const activeFans = fans.filter((f) => Number(f.rpm) > 0);
   const fanRows = activeFans.map((f) => '<div class="list-item"><span class="muted">' + escapeHtml(f.name) + '</span><b>' + Math.round(f.rpm) + ' RPM</b></div>');
-  if (gpu && gpu.fan_pct != null && Number(gpu.fan_pct) > 0) {
+  if (gpu && gpu.fan_rpm != null && Number(gpu.fan_rpm) > 0) {
+    fanRows.unshift('<div class="list-item"><span class="muted">GPU Fan</span><b>' + Math.round(Number(gpu.fan_rpm)) + ' RPM</b></div>');
+  } else if (gpu && gpu.fan_pct != null && Number(gpu.fan_pct) > 0) {
     fanRows.unshift('<div class="list-item"><span class="muted">GPU Fan</span><b>' + fmt(gpu.fan_pct, "%", 0) + '</b></div>');
   }
   $("home-fans").innerHTML = fanRows.length ? fanRows.join("") : '<div class="muted">' + dash + '</div>';

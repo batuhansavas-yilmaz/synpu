@@ -19,9 +19,11 @@ class FakeNvml:
     NVML_TEMPERATURE_GPU = 0
     NVML_CLOCK_GRAPHICS = 0
 
-    def __init__(self, fail_init=False, fail_power=False):
+    def __init__(self, fail_init=False, fail_power=False, fail_fan=False, fail_fan_rpm=False):
         self.fail_init = fail_init
         self.fail_power = fail_power
+        self.fail_fan = fail_fan
+        self.fail_fan_rpm = fail_fan_rpm
         self.shutdown_called = False
 
     def nvmlInit(self):
@@ -54,6 +56,16 @@ class FakeNvml:
     def nvmlDeviceGetClockInfo(self, handle, clock_type):
         return 2610
 
+    def nvmlDeviceGetFanSpeed(self, handle):
+        if self.fail_fan:
+            raise FakeNVMLError("not supported")
+        return 41
+
+    def nvmlDeviceGetFanSpeedRPM(self, handle):
+        if self.fail_fan_rpm:
+            raise FakeNVMLError("not supported")
+        return 1520
+
 
 def test_read_gpu_returns_fields():
     g = read_gpu(FakeNvml())
@@ -64,7 +76,15 @@ def test_read_gpu_returns_fields():
     assert g.vram_total_mb == 12282
     assert round(g.power_w, 2) == 11.66
     assert g.freq_mhz == 2610.0
+    assert g.fan_pct == 41.0
+    assert g.fan_rpm == 1520
 
+
+def test_fan_rpm_unsupported_yields_none():
+    g = read_gpu(FakeNvml(fail_fan_rpm=True))
+    assert g is not None
+    assert g.fan_pct == 41.0
+    assert g.fan_rpm is None
 
 def test_read_gpu_no_device_returns_none():
     assert read_gpu(FakeNvml(fail_init=True)) is None

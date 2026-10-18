@@ -192,6 +192,13 @@ def test_pick_active_merges_duplicate_names():
     assert merged.freq_mhz == 2500.0
 
 
+def test_gpu_merge_keeps_fan_rpm():
+    primary = GpuStats("GPU Test", 10.0, 50.0, 100, 1000, 50.0, None, None, None, None)
+    extra = GpuStats("GPU Test", 20.0, 51.0, 100, 1000, 55.0, 2500.0, 60.0, 41.0, 1520)
+    merged = pick_active_gpu(primary, (extra,))
+    assert merged.fan_pct == 41.0
+    assert merged.fan_rpm == 1520
+
 def test_ram_info_enrichment():
     col, _, _ = _collector(ram_info_source=lambda: {"speed_mts": 6000, "mem_type": "DDR5", "module_count": 2})
     d = col.snapshot()
