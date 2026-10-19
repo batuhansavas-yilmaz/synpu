@@ -620,6 +620,17 @@ nav.bottom .inner {
   </div>
 </div>
 
+<div class="modal-backdrop" id="offline-modal" hidden>
+  <div class="modal" style="max-width:340px">
+    <div class="row-between" style="margin-bottom:2px">
+      <div class="card-title" style="margin:0">PC şu an kapalı</div>
+      <button class="pc-x" id="offline-close" type="button" aria-label="Kapat">&times;</button>
+    </div>
+    <div class="muted" style="margin-top:8px;line-height:1.6">Synpu'ya ulaşılamıyor. Bilgisayar kapalı veya ağda değil.</div>
+    <button class="btn accent" id="offline-retry" type="button" style="width:100%;margin-top:14px">Tekrar dene</button>
+  </div>
+</div>
+
 <nav class="bottom">
   <div class="inner">
     <button class="nav-btn active" data-screen="home" type="button">
@@ -649,6 +660,7 @@ let rangeMinutes = 10;
 let chartTimer = null;
 let last = null;
 let lastDisks = [];
+let offlineTimer = null, offlineDismissed = false;
 let lastGpus = [];
 
 function loadPcs() {
@@ -664,12 +676,30 @@ function savePcs() {
   try { localStorage.setItem(STORE, JSON.stringify(pcs)); } catch (e) {}
 }
 
+function hideOffline() {
+  if (offlineTimer) { clearTimeout(offlineTimer); offlineTimer = null; }
+  const modal = $("offline-modal");
+  if (modal) modal.hidden = true;
+}
+
+function scheduleOffline() {
+  if (offlineDismissed) return;
+  const modal = $("offline-modal");
+  if (!modal || !modal.hidden || offlineTimer) return;
+  offlineTimer = setTimeout(() => {
+    offlineTimer = null;
+    if (!offlineDismissed) modal.hidden = false;
+  }, 3000);
+}
+
 function setStatus(state) {
   const el = $("status");
   el.className = state || "";
   const pc = pcs[active];
   $("health-text").textContent = "Bağlı: " + (pc ? pc.name : dash);
   $("health").title = pc ? pc.url : "";
+  if (state === "live") { offlineDismissed = false; hideOffline(); }
+  else if (state === "dead" && pc) scheduleOffline();
 }
 
 function fmt(v, unit, digits) {
@@ -750,6 +780,8 @@ function applyWarn(valueId, dotId, value, warnAt, dangerAt) {
 }
 
 function render(d) {
+  offlineDismissed = false;
+  hideOffline();
   last = d;
   lastDisks = Array.isArray(d.disks) ? d.disks : [];
   lastGpus = Array.isArray(d.gpus) ? d.gpus : [];
@@ -965,6 +997,8 @@ function stopConn() {
   clearInterval(pollTimer); pollTimer = null;
   clearInterval(retryTimer); retryTimer = null;
   pollBusy = false;
+  offlineDismissed = false;
+  hideOffline();
   if (ws) { try { ws.onclose = null; ws.close(); } catch (e) {} ws = null; }
 }
 
@@ -1550,6 +1584,8 @@ function closeSettingsModal() {
 }
 
 $("settings-close").addEventListener("click", closeSettingsModal);
+$("offline-close").addEventListener("click", () => { offlineDismissed = true; hideOffline(); });
+$("offline-retry").addEventListener("click", () => { offlineDismissed = false; hideOffline(); activate(active); });
 $("settings-modal").addEventListener("click", (ev) => {
   if (ev.target === $("settings-modal")) closeSettingsModal();
 });
