@@ -1,6 +1,6 @@
 [project]
 name = "synpu"
-version = "0.2.9"
+version = "0.2.10"
 description = "Synpu — yerel ağda telefondan PC durumunu (CPU/GPU/RAM/FPS) izleyen minik panel"
 requires-python = ">=3.12,<3.13"
 dependencies = [

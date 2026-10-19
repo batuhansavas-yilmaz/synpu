@@ -158,6 +158,22 @@ nav.bottom .inner { max-width: 520px; margin: 0 auto; display: grid; grid-templa
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)), rgba(10, 16, 30, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: 0 24px 60px rgba(0, 0, 0, 0.50); }
 .modal .card { margin-top: 10px; padding: 14px; }
+#offline-modal { opacity: 0; }
+#offline-modal.open { opacity: 1; transition: opacity 250ms linear; }
+#offline-modal.closing { opacity: 0; transition: opacity 250ms linear; }
+#offline-modal .modal { opacity: 0; transform: scale(1.3); }
+#offline-modal.open .modal {
+  opacity: 1; transform: scale(1);
+  transition: opacity 250ms cubic-bezier(0.42, 0, 0.58, 1),
+    transform 250ms cubic-bezier(0.35, 0.91, 0.33, 0.97);
+}
+#offline-modal.closing .modal {
+  opacity: 0; transform: scale(1);
+  transition: opacity 250ms cubic-bezier(0.42, 0, 0.58, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  #offline-modal, #offline-modal .modal { transition: none !important; }
+}
 .input { width: 100%; margin-top: 10px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.16);
   color: var(--text); border-radius: 12px; padding: 10px 12px; font-size: 14px; outline: none; }
 .input:focus { border-color: #4f7cff; }
@@ -620,14 +636,9 @@ nav.bottom .inner {
   </div>
 </div>
 
-<div class="modal-backdrop" id="offline-modal" hidden>
-  <div class="modal" style="max-width:340px">
-    <div class="row-between" style="margin-bottom:2px">
-      <div class="card-title" style="margin:0">PC şu an kapalı</div>
-      <button class="pc-x" id="offline-close" type="button" aria-label="Kapat">&times;</button>
-    </div>
-    <div class="muted" style="margin-top:8px;line-height:1.6">Synpu'ya ulaşılamıyor. Bilgisayar kapalı veya ağda değil.</div>
-    <button class="btn accent" id="offline-retry" type="button" style="width:100%;margin-top:14px">Tekrar dene</button>
+<div class="modal-backdrop" id="offline-modal" hidden style="align-items:center;justify-content:center;padding:16px">
+  <div class="modal" style="max-width:320px;padding:24px;text-align:center">
+    <div style="font-size:16px;font-weight:800;letter-spacing:.4px">PC ŞUAN KAPALI</div>
   </div>
 </div>
 
@@ -660,7 +671,7 @@ let rangeMinutes = 10;
 let chartTimer = null;
 let last = null;
 let lastDisks = [];
-let offlineTimer = null, offlineDismissed = false;
+let offlineTimer = null, offlineHideTimer = null, offlineDismissed = false;
 let lastGpus = [];
 
 function loadPcs() {
@@ -679,7 +690,27 @@ function savePcs() {
 function hideOffline() {
   if (offlineTimer) { clearTimeout(offlineTimer); offlineTimer = null; }
   const modal = $("offline-modal");
-  if (modal) modal.hidden = true;
+  if (!modal || modal.hidden || modal.classList.contains("closing")) return;
+  modal.classList.remove("open");
+  modal.classList.add("closing");
+  offlineHideTimer = setTimeout(() => {
+    modal.hidden = true;
+    modal.classList.remove("closing");
+    offlineHideTimer = null;
+  }, 270);
+}
+
+function showOffline() {
+  const modal = $("offline-modal");
+  if (!modal) return;
+  if (offlineHideTimer) { clearTimeout(offlineHideTimer); offlineHideTimer = null; }
+  modal.classList.remove("closing");
+  const alreadyOpen = !modal.hidden && modal.classList.contains("open");
+  modal.hidden = false;
+  if (alreadyOpen) return;
+  modal.classList.remove("open");
+  void modal.offsetWidth;
+  modal.classList.add("open");
 }
 
 function scheduleOffline() {
@@ -688,7 +719,7 @@ function scheduleOffline() {
   if (!modal || !modal.hidden || offlineTimer) return;
   offlineTimer = setTimeout(() => {
     offlineTimer = null;
-    if (!offlineDismissed) modal.hidden = false;
+    if (!offlineDismissed) showOffline();
   }, 3000);
 }
 
@@ -1584,8 +1615,6 @@ function closeSettingsModal() {
 }
 
 $("settings-close").addEventListener("click", closeSettingsModal);
-$("offline-close").addEventListener("click", () => { offlineDismissed = true; hideOffline(); });
-$("offline-retry").addEventListener("click", () => { offlineDismissed = false; hideOffline(); activate(active); });
 $("settings-modal").addEventListener("click", (ev) => {
   if (ev.target === $("settings-modal")) closeSettingsModal();
 });
