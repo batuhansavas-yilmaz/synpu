@@ -251,15 +251,15 @@ nav.bottom .inner {
   .home-col .card, .home-col .mini-grid { margin: 0 !important; }
   #screen-home > .card { margin: 0 !important; }
   #screen-charts .seg, #screen-charts .pills { max-width: 560px; }
-  #charts-wrap, #gpu-charts {
+  #charts-wrap, #gpu-charts, #cpu-charts {
     display: grid;
     grid-template-columns: 1fr;
     gap: 22px;
   }
-  #charts-wrap .chart-card, #gpu-charts .chart-card { margin-bottom: 0; }
+  #charts-wrap .chart-card, #gpu-charts .chart-card, #cpu-charts .chart-card { margin-bottom: 0; }
   .chart-group + .chart-group { margin-top: 22px; }
   .chart-group-grid { grid-template-columns: 1fr 1fr; gap: 18px; }
-  #screen-gpu.active { max-width: 780px; width: 100%; margin: 0 auto; }
+  #screen-gpu.active, #screen-cpu.active { max-width: 780px; width: 100%; margin: 0 auto; }
   #screen-settings.active {
     display: grid;
     grid-template-columns: 1fr;
@@ -304,7 +304,7 @@ nav.bottom .inner {
   .mini .k { font-size: 13px; }
   .mini .v { font-size: 24px; }
   #screen-charts.active { max-width: 1060px; width: 100%; margin-left: auto; margin-right: auto; }
-  #charts-wrap, #gpu-charts { gap: 24px; }
+  #charts-wrap, #gpu-charts, #cpu-charts { gap: 24px; }
   .chart-group-grid { gap: 22px; }
 }
 @media (min-width: 2000px) {
@@ -357,7 +357,7 @@ nav.bottom .inner {
       </div>
     </div>
     <div class="gauges">
-      <div class="gauge-card" id="cpu-gauge-card" title="CPU grafiklerini aç" role="button" tabindex="0">
+      <div class="gauge-card" id="cpu-gauge-card" title="CPU detaylarını aç" role="button" tabindex="0">
         <div class="gauge-wrap">
           <svg viewBox="0 0 132 132">
             <defs>
@@ -563,6 +563,42 @@ nav.bottom .inner {
     <div id="gpu-charts" style="margin-top:10px"></div>
   </section>
 
+  <section class="screen" id="screen-cpu">
+    <div class="back-row">
+      <button class="back-btn" id="cpu-back" type="button" aria-label="Geri">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div>
+        <div class="title">CPU Detayları</div>
+        <div class="muted" id="cd-name">—</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="gd-summary">
+        <div class="gauge-wrap" style="width:120px;height:120px;margin:0">
+          <svg viewBox="0 0 132 132">
+            <defs>
+              <linearGradient id="gCpu2" x1="0" y1="0" x2="1" y2="1">
+                <stop stop-color="#3b82f6"/><stop offset="1" stop-color="#22d3ee"/>
+              </linearGradient>
+            </defs>
+            <circle class="gauge-track" cx="66" cy="66" r="56"/>
+            <circle class="gauge-bar" id="ring-cpu-detail" cx="66" cy="66" r="56" stroke="url(#gCpu2)"/>
+          </svg>
+          <div class="gauge-center"><b id="cd-usage">—</b><span>%</span></div>
+        </div>
+        <div class="gd-list">
+          <div class="gd-item"><span class="muted">Sıcaklık</span><b id="cd-temp">—</b></div>
+          <div class="gd-item"><span class="muted">Frekans</span><b id="cd-freq">—</b></div>
+          <div class="gd-item"><span class="muted">Çekirdek</span><b id="cd-cores">—</b></div>
+          <div class="gd-item"><span class="muted">En Yoğun Çekirdek</span><b id="cd-max-core">—</b></div>
+          <div class="gd-item"><span class="muted">Fan</span><b id="cd-fan">—</b></div>
+        </div>
+      </div>
+    </div>
+    <div id="cpu-charts" style="margin-top:10px"></div>
+  </section>
+
 
 </div>
 
@@ -723,8 +759,10 @@ function clearValues() {
    "top-cpu", "top-ram", "top-gpu", "home-sys-host", "home-sys-uptime",
    "val-net-down", "val-net-up", "val-ping", "net-meta", "home-cpu-name", "home-gpu-name",
    "home-ram-speed", "home-ram-temp",
-   "gd-name", "gd-usage"].forEach((id) => { const el = $(id); if (el) el.textContent = dash; });
+   "gd-name", "gd-usage", "cd-name", "cd-usage", "cd-temp", "cd-freq",
+   "cd-cores", "cd-max-core", "cd-fan"].forEach((id) => { const el = $(id); if (el) el.textContent = dash; });
   setRing("ring-cpu", null); setRing("ring-gpu", null); setRing("ring-gpu-detail", null);
+  setRing("ring-cpu-detail", null);
   setBar("home-ram-bar", 0);
   $("home-disks").innerHTML = '<div class="muted">' + dash + '</div>';
   $("home-fans").innerHTML = '<div class="muted">' + dash + '</div>';
@@ -768,6 +806,16 @@ function render(d) {
   $("val-cpu-temp").textContent = fmt(cpu.temp_c, "\u00b0C", 1);
   $("val-cpu-freq").textContent = ghz(cpu.freq_mhz, 2);
   $("home-cpu-name").textContent = cpu.name || dash;
+  const cpuDetailCores = Array.isArray(cpu.cores) ? cpu.cores.filter((v) => v != null && isFinite(v)) : [];
+  $("cd-name").textContent = cpu.name || dash;
+  $("cd-usage").textContent = fmt(cpu.usage_pct, "", 0);
+  setRing("ring-cpu-detail", cpu.usage_pct);
+  $("cd-temp").textContent = fmt(cpu.temp_c, "\u00b0C", 1);
+  $("cd-freq").textContent = ghz(cpu.freq_mhz, 2);
+  $("cd-cores").textContent = cpuDetailCores.length ? String(cpuDetailCores.length) : dash;
+  $("cd-max-core").textContent = cpuDetailCores.length ? Math.max(...cpuDetailCores).toFixed(0) + " %" : dash;
+  const cpuDetailFan = (Array.isArray(d.fans) ? d.fans : []).find((f) => /cpu/i.test(String(f.name || "")));
+  $("cd-fan").textContent = cpuDetailFan && cpuDetailFan.rpm != null ? Math.round(cpuDetailFan.rpm) + " RPM" : dash;
 
   $("val-gpu-usage").textContent = fmt(gpu && gpu.usage_pct, "", 0);
   setRing("ring-gpu", gpu && gpu.usage_pct);
@@ -911,6 +959,7 @@ function render(d) {
   applyWarn("val-cpu-temp", "warn-cpu-temp", cpu.temp_c, 70, 80);
   applyWarn("home-gpu-temp", "warn-gpu-temp", gpu && gpu.temp_c, 70, 80);
   applyWarn("val-gpu-temp", null, gpu && gpu.temp_c, 70, 80);
+  applyWarn("cd-temp", null, cpu.temp_c, 70, 80);
   applyWarn("val-ram-pct", "warn-ram", ram && ram.percent, 90, 97);
 }
 
@@ -1031,14 +1080,14 @@ function tryWs(pc) {
 
 function setScreen(name) {
   screen = name;
-  ["home", "charts", "gpu"].forEach((s) => {
+  ["home", "charts", "gpu", "cpu"].forEach((s) => {
     const el = $("screen-" + s);
     if (el) el.classList.toggle("active", s === name);
   });
   document.querySelectorAll(".nav-btn").forEach((b) => {
-    b.classList.toggle("active", b.dataset.screen === name || (name === "gpu" && b.dataset.screen === "home"));
+    b.classList.toggle("active", b.dataset.screen === name || ((name === "gpu" || name === "cpu") && b.dataset.screen === "home"));
   });
-  if (name === "charts" || name === "gpu") {
+  if (name === "charts" || name === "gpu" || name === "cpu") {
     startCharts();
   } else {
     stopCharts();
@@ -1046,7 +1095,7 @@ function setScreen(name) {
 }
 
 function startCharts() {
-  if (chartTimer) return;
+  if (chartTimer) { clearInterval(chartTimer); chartTimer = null; }
   buildChartCards();
   refreshCharts();
   chartTimer = setInterval(refreshCharts, 2000);
@@ -1084,6 +1133,7 @@ const CHART_DEFS = {
 
 function defsFor(screenName) {
   if (screenName === "gpu") return CHART_DEFS.gpu.slice(0, 2);
+  if (screenName === "cpu") return CHART_DEFS.cpu;
   if (chartTab === "disk") return diskChartDefs();
   if (chartTab === "gpu") return gpuChartDefs();
   return CHART_DEFS[chartTab] || [];
@@ -1125,7 +1175,8 @@ function diskChartDefs() {
 
 function buildChartCards() {
   const isGpu = screen === "gpu";
-  const wrap = $(isGpu ? "gpu-charts" : "charts-wrap");
+  const isCpu = screen === "cpu";
+  const wrap = $(isGpu ? "gpu-charts" : isCpu ? "cpu-charts" : "charts-wrap");
   const defs = defsFor(screen);
   let html = "";
   let currentGroup = null;
@@ -1138,8 +1189,8 @@ function buildChartCards() {
     }
     html += '<div class="chart-card">' +
       '<div class="chart-head"><span class="t">' + def.title + '</span>' +
-      '<span class="v" id="' + (isGpu ? "gd" : "ch") + '-now-' + i + '">' + dash + '</span></div>' +
-      '<canvas class="chart" id="' + (isGpu ? "gd" : "ch") + '-chart-' + i + '"></canvas>' +
+      '<span class="v" id="' + (isGpu ? "gd" : isCpu ? "cd" : "ch") + '-now-' + i + '">' + dash + '</span></div>' +
+      '<canvas class="chart" id="' + (isGpu ? "gd" : isCpu ? "cd" : "ch") + '-chart-' + i + '"></canvas>' +
     '</div>';
   });
   if (currentGroup !== null) html += "</div></div>";
@@ -1189,10 +1240,12 @@ async function refreshCharts() {
     samples = last && last.timestamp ? [{ ts: last.timestamp, cpu_usage: last.cpu && last.cpu.usage_pct }] : [];
   }
   const isGpu = screen === "gpu";
+  const isCpu = screen === "cpu";
   const defs = defsFor(screen);
   defs.forEach((def, i) => {
-    const canvas = $(isGpu ? "gd-chart-" + i : "ch-chart-" + i);
-    const nowEl = $(isGpu ? "gd-now-" + i : "ch-now-" + i);
+    const prefix = isGpu ? "gd" : isCpu ? "cd" : "ch";
+    const canvas = $(prefix + "-chart-" + i);
+    const nowEl = $(prefix + "-now-" + i);
     if (!canvas) return;
     if (def.multi) {
       const lastSample = samples.length ? samples[samples.length - 1] : null;
@@ -1491,6 +1544,7 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
 $("gear").addEventListener("click", openSettingsModal);
 $("health").addEventListener("click", openSettingsModal);
 $("gpu-back").addEventListener("click", () => setScreen("home"));
+$("cpu-back").addEventListener("click", () => setScreen("home"));
 
 document.querySelectorAll("#chart-tabs .seg-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -1509,12 +1563,6 @@ document.querySelectorAll("#range-pills .pill").forEach((btn) => {
   });
 });
 
-function openCpuCharts() {
-  chartTab = "cpu";
-  document.querySelectorAll("#chart-tabs .seg-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === "cpu"));
-  setScreen("charts");
-}
-
 function activateGauge(id, action) {
   $(id).addEventListener("click", action);
   $(id).addEventListener("keydown", (ev) => {
@@ -1522,7 +1570,7 @@ function activateGauge(id, action) {
   });
 }
 
-activateGauge("cpu-gauge-card", openCpuCharts);
+activateGauge("cpu-gauge-card", () => setScreen("cpu"));
 activateGauge("gpu-gauge-card", () => setScreen("gpu"));
 
 function closeAddModal() {
