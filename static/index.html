@@ -59,6 +59,9 @@ header.top { display: flex; align-items: center; gap: 10px; padding: 0 0 10px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 12px; }
 .gauges { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 .gauge-card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 10px 8px 9px; text-align: center; }
+#cpu-gauge-card, #gpu-gauge-card { cursor: pointer; }
+#cpu-gauge-card:hover, #gpu-gauge-card:hover { border-color: rgba(110, 168, 255, 0.42); }
+#cpu-gauge-card:focus-visible, #gpu-gauge-card:focus-visible { outline: 2px solid #6ea8ff; outline-offset: 2px; }
 .gauge-wrap { position: relative; width: 108px; height: 108px; margin: 0 auto; }
 .gauge-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .gauge-track { fill: none; stroke: #1a2540; stroke-width: 10; }
@@ -354,7 +357,7 @@ nav.bottom .inner {
       </div>
     </div>
     <div class="gauges">
-      <div class="gauge-card">
+      <div class="gauge-card" id="cpu-gauge-card" title="CPU grafiklerini aç" role="button" tabindex="0">
         <div class="gauge-wrap">
           <svg viewBox="0 0 132 132">
             <defs>
@@ -373,7 +376,7 @@ nav.bottom .inner {
         <div class="gauge-label">CPU</div>
         <div class="gauge-sub" id="home-cpu-name">—</div>
       </div>
-      <div class="gauge-card" id="gpu-gauge-card">
+      <div class="gauge-card" id="gpu-gauge-card" title="GPU detaylarını aç" role="button" tabindex="0">
         <div class="gauge-wrap">
           <svg viewBox="0 0 132 132">
             <circle class="gauge-track" cx="66" cy="66" r="56"/>
@@ -1506,7 +1509,21 @@ document.querySelectorAll("#range-pills .pill").forEach((btn) => {
   });
 });
 
-$("gpu-gauge-card").addEventListener("click", () => setScreen("gpu"));
+function openCpuCharts() {
+  chartTab = "cpu";
+  document.querySelectorAll("#chart-tabs .seg-btn").forEach((b) => b.classList.toggle("active", b.dataset.tab === "cpu"));
+  setScreen("charts");
+}
+
+function activateGauge(id, action) {
+  $(id).addEventListener("click", action);
+  $(id).addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); action(); }
+  });
+}
+
+activateGauge("cpu-gauge-card", openCpuCharts);
+activateGauge("gpu-gauge-card", () => setScreen("gpu"));
 
 function closeAddModal() {
   $("add-modal").hidden = true;
