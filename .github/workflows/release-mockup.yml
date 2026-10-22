@@ -1,0 +1,37 @@
+name: Keep mockup on release pages
+
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to update (e.g. v0.2.14)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  ensure-mockup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add iPhone 17 mockup to release notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const tag = context.eventName === "release"
+              ? context.payload.release.tag_name
+              : context.payload.inputs.tag;
+            const { data: release } = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+            const image = `https://raw.githubusercontent.com/${owner}/${repo}/main/assets/synpu-iphone17.png`;
+            const body = release.body || "";
+            if (body.includes(image)) {
+              core.info(`Mockup already present on ${tag}`);
+              return;
+            }
+            const block = `<p align="center">\n  <img src="${image}" alt="Synpu iPhone 17 mockup" width="900">\n</p>\n\n`;
+            await github.rest.repos.updateRelease({ owner, repo, release_id: release.id, body: block + body });
+            core.info(`Mockup added to ${tag}`);
