@@ -1,5 +1,5 @@
 #define MyAppName "Synpu"
-#define MyAppVersion "0.2.13"
+#define MyAppVersion "0.2.14"
 #define MyAppPublisher "Batuhan Savas Yilmaz"
 #define MyAppURL "https://github.com/batuhansavas-yilmaz/synpu"
 
@@ -36,6 +36,7 @@ Source: "..\scripts\launch.vbs"; DestDir: "{app}\scripts"
 Source: "..\pyproject.toml"; DestDir: "{app}"
 Source: "..\uv.lock"; DestDir: "{app}"
 Source: "..\README.md"; DestDir: "{app}"
+Source: "..\assets\*"; DestDir: "{app}\assets"; Flags: recursesubdirs createallsubdirs ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"
 Source: "..\third_party\*.txt"; DestDir: "{app}\third_party"
 

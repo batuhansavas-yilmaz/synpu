@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#060b17">
+<meta name="theme-color" content="#060b17" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f8ff" media="(prefers-color-scheme: light)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Synpu">
@@ -26,6 +27,14 @@
   --green: #22c55e;
   --orange: #f59e0b;
   --red: #ef4444;
+  --link: #6ea8ff;
+  --chart-grid: rgba(120,140,180,.14);
+  --chart-axis: rgba(139,151,173,.8);
+  --chart-axis-soft: rgba(139,151,173,.65);
+  --chart-hover: rgba(255,255,255,.28);
+  --chart-hover-dot: rgba(255,255,255,.8);
+  --chart-tooltip-bg: rgba(8,13,28,.92);
+  --chart-tooltip-text: #e8eefc;
 }
 * { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
 [hidden] { display: none !important; }
@@ -312,6 +321,86 @@ nav.bottom .inner {
   #screen-charts.active { max-width: 1240px; }
   .gauge-wrap { width: 220px; height: 220px; }
   .gauge-center b { font-size: 46px; }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f4f8ff;
+    --card: #ffffff;
+    --card2: #edf4ff;
+    --line: #dbe6f5;
+    --text: #101c33;
+    --muted: #5d6f8c;
+    --blue: #2563eb;
+    --cyan: #0891b2;
+    --purple: #7c3aed;
+    --green: #15803d;
+    --orange: #b45309;
+    --red: #dc2626;
+    --link: #2563eb;
+    --chart-grid: rgba(30, 50, 90, 0.12);
+    --chart-axis: rgba(55, 75, 110, 0.82);
+    --chart-axis-soft: rgba(55, 75, 110, 0.68);
+    --chart-hover: rgba(30, 50, 90, 0.25);
+    --chart-hover-dot: rgba(30, 50, 90, 0.8);
+    --chart-tooltip-bg: rgba(255, 255, 255, 0.96);
+    --chart-tooltip-text: #16233c;
+  }
+  html { background: #eef4fc; }
+  body {
+    background:
+      radial-gradient(620px 480px at 82% 4%, rgba(96, 150, 255, 0.22), transparent 62%),
+      radial-gradient(560px 440px at 6% 30%, rgba(150, 120, 255, 0.16), transparent 64%),
+      radial-gradient(640px 500px at 97% 66%, rgba(80, 150, 255, 0.12), transparent 64%),
+      radial-gradient(480px 360px at 28% 96%, rgba(120, 180, 255, 0.12), transparent 64%),
+      linear-gradient(180deg, #f8fbff 0%, #edf3fc 55%, #f5f9ff 100%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+  .card, .gauge-card, .mini, .chart-card, .pc-item, .tab {
+    background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.78) 45%, rgba(255,255,255,0.9)), rgba(255,255,255,0.65);
+    border: 1px solid rgba(24, 48, 90, 0.12);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.95), 0 14px 34px rgba(32, 64, 120, 0.10);
+  }
+  .health, .icon-btn, .back-btn {
+    background: rgba(255,255,255,0.78);
+    border: 1px solid rgba(24,48,90,0.14);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+  }
+  .seg { background: rgba(255,255,255,0.72); border-color: rgba(24,48,90,0.14); }
+  .seg-btn.active { background: #2563eb; color: #fff; box-shadow: 0 4px 12px rgba(37,99,235,0.25); }
+  .pill { background: rgba(255,255,255,0.7); border-color: rgba(24,48,90,0.14); }
+  .pill.active { background: #e3efff; color: #1d4ed8; border-color: #a8c4ff; }
+  .btn { background: rgba(255,255,255,0.8); border-color: rgba(24,48,90,0.14); }
+  .btn.accent { background: linear-gradient(90deg, #2563eb, #7c3aed); color: #fff; box-shadow: 0 8px 20px rgba(37,99,235,.22); }
+  .gauge-track { stroke: #e6eef9; }
+  .bar { background: #e6eef9; }
+  nav.bottom .inner {
+    background: rgba(255,255,255,0.88);
+    border-top: 1px solid rgba(24,48,90,0.12);
+    box-shadow: 0 -10px 30px rgba(30,60,110,.08), inset 0 1px 0 rgba(255,255,255,.9);
+  }
+  .nav-btn.active { color: #2563eb; }
+  .pc-item.active { background: #e8f1ff; border-color: #b9d0ff; }
+  .install-banner {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.9));
+    border: 1px solid rgba(24,48,90,0.14);
+    box-shadow: 0 16px 40px rgba(30,60,110,0.16);
+  }
+  .modal-backdrop { background: rgba(22, 34, 58, 0.28); }
+  .modal {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.94));
+    border: 1px solid rgba(24,48,90,0.14);
+    box-shadow: 0 24px 60px rgba(30,60,110,0.22);
+  }
+  .input { background: #ffffff; border: 1px solid rgba(24,48,90,0.16); }
+  .input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+  .v-warn { color: #b45309 !important; }
+  .v-danger { color: #dc2626 !important; }
+  .warn-dot { background: #d97706; }
+  .warn-dot.danger { background: #dc2626; }
+  .win-icon { color: #3b6fd8; }
 }
 </style>
 </head>
@@ -634,7 +723,7 @@ nav.bottom .inner {
       <div class="muted" id="about-uptime" style="margin-top:6px"></div>
       <div class="muted" style="margin-top:6px">QR pencereyi açmak için tepsi simgesini kullan.</div>
       <div class="muted" style="margin-top:6px">
-        <a href="https://github.com/batuhansavas-yilmaz/synpu/releases" target="_blank" rel="noopener" style="color:#6ea8ff">GitHub</a>
+        <a href="https://github.com/batuhansavas-yilmaz/synpu/releases" target="_blank" rel="noopener" style="color:var(--link)">GitHub</a>
       </div>
     </div>
   </div>
@@ -1293,7 +1382,22 @@ async function refreshCharts() {
   });
 }
 
+function chartTheme() {
+  const styles = getComputedStyle(document.documentElement);
+  const read = (name, fallback) => (styles.getPropertyValue(name) || fallback).trim();
+  return {
+    grid: read("--chart-grid", "rgba(120,140,180,.14)"),
+    axis: read("--chart-axis", "rgba(139,151,173,.8)"),
+    axisSoft: read("--chart-axis-soft", "rgba(139,151,173,.65)"),
+    hover: read("--chart-hover", "rgba(255,255,255,.28)"),
+    hoverDot: read("--chart-hover-dot", "rgba(255,255,255,.8)"),
+    tooltipBg: read("--chart-tooltip-bg", "rgba(8,13,28,.92)"),
+    tooltipText: read("--chart-tooltip-text", "#e8eefc"),
+  };
+}
+
 function drawMultiChart(canvas, lines) {
+  const theme = chartTheme();
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth || 300;
   const h = canvas.clientHeight || 130;
@@ -1303,7 +1407,7 @@ function drawMultiChart(canvas, lines) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
   const top = 14, bottom = 26;
-  ctx.strokeStyle = "rgba(120,140,180,.14)";
+  ctx.strokeStyle = theme.grid;
   ctx.lineWidth = 1;
   for (let i = 0; i <= 3; i++) {
     const y = top + (h - top - bottom) * i / 3;
@@ -1312,7 +1416,7 @@ function drawMultiChart(canvas, lines) {
   const all = lines.flat();
   ctx.font = "10px system-ui";
   if (all.length < 2) {
-    ctx.fillStyle = "rgba(139,151,173,.7)";
+    ctx.fillStyle = theme.axisSoft;
     ctx.fillText("veri toplanıyor...", 8, h / 2);
     return;
   }
@@ -1323,7 +1427,10 @@ function drawMultiChart(canvas, lines) {
   vmax = Math.min(100, vmax * 1.1);
   const X = (t) => (t1 === t0 ? w / 2 : ((t - t0) / (t1 - t0)) * (w - 6) + 3);
   const Y = (v) => h - bottom - ((v - vmin) / (vmax - vmin)) * (h - top - bottom);
-  const palette = ["#3b82f6", "#22d3ee", "#a855f7", "#f59e0b", "#22c55e", "#ef4444", "#14b8a6", "#eab308"];
+  const lightTheme = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+  const palette = lightTheme
+    ? ["#2563eb", "#0891b2", "#7c3aed", "#d97706", "#16a34a", "#dc2626", "#0f766e", "#ca8a04"]
+    : ["#3b82f6", "#22d3ee", "#a855f7", "#f59e0b", "#22c55e", "#ef4444", "#14b8a6", "#eab308"];
   lines.forEach((line, index) => {
     if (line.length < 2) return;
     ctx.beginPath();
@@ -1336,12 +1443,12 @@ function drawMultiChart(canvas, lines) {
     ctx.lineJoin = "round";
     ctx.stroke();
   });
-  ctx.fillStyle = "rgba(139,151,173,.8)";
+  ctx.fillStyle = theme.axis;
   ctx.fillText(String(Math.round(vmax)), 4, 10);
   ctx.fillText("0", 4, h - bottom - 4);
   const firstPoint = all.reduce((a, b) => (b.t < a.t ? b : a));
   const lastPoint = all.reduce((a, b) => (b.t > a.t ? b : a));
-  ctx.fillStyle = "rgba(139,151,173,.65)";
+  ctx.fillStyle = theme.axisSoft;
   ctx.font = "9px system-ui";
   ctx.fillText(fmtClock(firstPoint.wall != null ? firstPoint.wall : firstPoint.t), 3, h - 7);
   ctx.textAlign = "right";
@@ -1364,6 +1471,7 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 function drawChart(canvas, series, color, fmtFn, hoverIdx) {
+  const theme = chartTheme();
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth || 300;
   const h = canvas.clientHeight || 130;
@@ -1373,7 +1481,7 @@ function drawChart(canvas, series, color, fmtFn, hoverIdx) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
   const top = 14, bottom = 26;
-  ctx.strokeStyle = "rgba(120,140,180,.14)";
+  ctx.strokeStyle = theme.grid;
   ctx.lineWidth = 1;
   for (let i = 0; i <= 3; i++) {
     const y = top + (h - top - bottom) * i / 3;
@@ -1382,7 +1490,7 @@ function drawChart(canvas, series, color, fmtFn, hoverIdx) {
   const pts = series.filter((p) => p.v !== null && isFinite(p.v));
   ctx.font = "10px system-ui";
   if (pts.length < 2) {
-    ctx.fillStyle = "rgba(139,151,173,.7)";
+    ctx.fillStyle = theme.axisSoft;
     ctx.fillText("veri toplanıyor...", 8, h / 2);
     return;
   }
@@ -1417,12 +1525,12 @@ function drawChart(canvas, series, color, fmtFn, hoverIdx) {
   ctx.arc(X(lastPt.t), Y(lastPt.v), 3, 0, Math.PI * 2);
   ctx.fillStyle = color;
   ctx.fill();
-  ctx.fillStyle = "rgba(139,151,173,.8)";
+  ctx.fillStyle = theme.axis;
   ctx.fillText(axisLabel(vmax), 4, 10);
   ctx.fillText(axisLabel(vmin), 4, h - bottom - 4);
   const firstWall = pts[0].wall != null ? pts[0].wall : pts[0].t;
   const lastWall = pts[pts.length - 1].wall != null ? pts[pts.length - 1].wall : pts[pts.length - 1].t;
-  ctx.fillStyle = "rgba(139,151,173,.65)";
+  ctx.fillStyle = theme.axisSoft;
   ctx.font = "9px system-ui";
   ctx.fillText(fmtClock(firstWall), 3, h - 7);
   ctx.textAlign = "right";
@@ -1431,7 +1539,7 @@ function drawChart(canvas, series, color, fmtFn, hoverIdx) {
   if (hoverIdx !== null && hoverIdx !== undefined && pts[hoverIdx]) {
     const hp = pts[hoverIdx];
     const hx = X(hp.t), hy = Y(hp.v);
-    ctx.strokeStyle = "rgba(255,255,255,.28)";
+    ctx.strokeStyle = theme.hover;
     ctx.setLineDash([3, 3]);
     ctx.beginPath(); ctx.moveTo(hx, top - 4); ctx.lineTo(hx, h - bottom); ctx.stroke();
     ctx.setLineDash([]);
@@ -1439,7 +1547,7 @@ function drawChart(canvas, series, color, fmtFn, hoverIdx) {
     ctx.arc(hx, hy, 4, 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,.8)";
+    ctx.strokeStyle = theme.hoverDot;
     ctx.lineWidth = 1.5;
     ctx.stroke();
     const label = (fmtFn ? fmtFn(hp.v) : String(Math.round(hp.v))) + "  " + fmtClock(hp.wall != null ? hp.wall : hp.t);
@@ -1448,14 +1556,14 @@ function drawChart(canvas, series, color, fmtFn, hoverIdx) {
     let bx = hx + 8;
     if (bx + textWidth + 14 > w) bx = hx - textWidth - 22;
     const by = Math.max(4, hy - 26);
-    ctx.fillStyle = "rgba(8, 13, 28, 0.92)";
+    ctx.fillStyle = theme.tooltipBg;
     roundRect(ctx, bx, by, textWidth + 14, 18, 6);
     ctx.fill();
     ctx.strokeStyle = color + "88";
     ctx.lineWidth = 1;
     roundRect(ctx, bx, by, textWidth + 14, 18, 6);
     ctx.stroke();
-    ctx.fillStyle = "#e8eefc";
+    ctx.fillStyle = theme.tooltipText;
     ctx.textBaseline = "middle";
     ctx.fillText(label, bx + 7, by + 9);
     ctx.textBaseline = "alphabetic";
@@ -1530,7 +1638,7 @@ async function refreshVersion() {
     if (info.update_available && info.latest) {
       $("about-update").hidden = false;
       $("about-update").innerHTML = 'Yeni sürüm <b>v' + escapeHtml(String(info.latest)) +
-        '</b> mevcut — <a href="' + escapeHtml(String(info.url)) + '" target="_blank" rel="noopener" style="color:#6ea8ff">GitHub\'dan indir</a>';
+        '</b> mevcut — <a href="' + escapeHtml(String(info.url)) + '" target="_blank" rel="noopener" style="color:var(--link)">GitHub\'dan indir</a>';
     } else {
       $("about-update").hidden = true;
     }
