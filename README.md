@@ -4,7 +4,9 @@
   <img src="assets/synpu-iphone17.png" alt="Synpu iPhone 17 mockup" width="900">
 </p>
 
-PC'nin canlı sistem istatistiklerini (CPU/GPU kullanımı ve sıcaklığı, RAM, diskler, ağ, fanlar, oyun FPS) telefonundan takip et. Synpu PC'de arka planda çalışır; aynı Wi-Fi ağındaki telefon tarayıcısından `http://<PC-IP>:8787` adresine bağlanırsın. Kurulum ve hesap gerekmez; veriler yerel ağda kalır. Arayüz cihazın sistem temasına uyar: açık sistemde açık, koyu sistemde koyu görünür.
+PC'nin canlı sistem istatistiklerini mobil cihazından takip et.
+
+Synpu PC'de arka planda çalışır; aynı ağdaki(Örn:Wi-Fi) telefon veya tablet  Synpu ekranındaki QR kodu okutup verileri canlı olarak izler. 
 
 ## Ne gösterir?
 
